@@ -1,0 +1,105 @@
+---
+title: "Project Graphs"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(covidHubUtils)
+library(tidyverse)
+library(DT)
+```
+
+```{r}
+
+the_timezeros <- seq(from = as.Date("2020-05-01") , to = as.Date("2021-5-01"), by="days") 
+
+truth_data <- load_truth(truth_source = "JHU", 
+                         target_variable = "inc case", 
+                         truth_end_date = "2021-05-15", 
+                         locations = c("12", "48", "25", "36", "06", "26"))
+
+forecasts_data <- load_forecasts(models = c("COVIDhub-baseline", "CU-select", "JHUAPL-Bucky",
+                                            "OliverWyman-Navigator", "LANL-GrowthRate",
+                                            "MOBS-GLEAM_COVID", "IowaStateLW-STEM", "JHU_IDD-CovidSP", "UVA-Ensemble"), 
+                                 forecast_dates = the_timezeros,
+                                 locations = c("12", "48", "25", "36", "06", "26"), 
+                                 targets = paste(1:4, "wk ahead inc case"), 
+                                 hub = "US")
+
+scored_forecasts <- score_forecasts(forecasts = forecasts_data, 
+                                    truth=truth_data, 
+                                    return_format = "wide")
+
+```
+
+## Plot 3: line graph of WIS score over time (by model)
+```{r}
+scores <- scored_forecasts %>%
+  dplyr::group_by(model, target_end_date) %>% 
+  dplyr::summarise(wis = mean(wis)) 
+scores %>% 
+  ggplot(aes(x = target_end_date, y = wis, color = model)) + geom_line()
+```
+## Earliest date of submission for each model
+```{r}
+min_date <- forecasts_data %>% group_by(model) %>% summarise(min_date = min(forecast_date))
+min_date
+```
+
+## WIS faceted by location 
+```{r}
+scored_forecasts <- scored_forecasts %>%
+  dplyr::group_by(model, target_end_date) %>% 
+  dplyr::mutate(wis = mean(wis)) 
+scored_forecasts %>% 
+  ggplot(aes(x = target_end_date, y = wis, color = model)) + geom_line() + facet_wrap(.~location)
+```
+
+
+
+##Plot 1: truth data
+```{r}
+dates_tibble <- tibble(
+  location_name = c("California", "Florida", "Massachusetts", "Michigan", "New York", "Texas"),
+  date = as.Date(c('2020-07-13','2020-07-11',"2020-07-02","2020-06-19","2020-07-19","2020-07-02"))
+)
+#vline.dat <- data.frame(z=as.Date(c('2020-07-13','2020-07-11',"2020-07-02","2020-06-19","2020-07-19","2020-07-02")))
+
+truth_plot <- truth_data %>% ggplot(aes(x = target_end_date, 
+             y = value, 
+             color = location_name)) + 
+  geom_point() +
+  #geom_vline(xintercept = c("2020-07-13","2020-07-11","2020-07-02","2020-06-19","2020-07-19","2020-07-02")) +
+  geom_smooth(se=FALSE) + 
+  facet_wrap(.~location_name) + 
+  theme_linedraw() 
+
+
+truth_plot+ 
+  geom_vline(aes(xintercept = date), dates_tibble) + labs(title = "Incident Cases Truth Data", x = "Date", y = "Incident Cases", color = "Location")
+```
+
+## Plot 2: truth data overall 
+```{r}
+truth_data_USonly <- load_truth(truth_source = "JHU",
+                         target_variable = "inc case",
+                         truth_end_date = "2020-08-15",
+                         locations = "US")
+
+truth_plot_USonly <- truth_data %>% ggplot(aes(x = target_end_date, 
+             y = value)) + 
+  geom_point() +
+  geom_smooth(se=FALSE) + 
+  theme_linedraw() 
+
+truth_plot_USonly + labs(title = "Incident Cases Truth Data US", subtitle = "until August 15", x = "Date", y = "Incident Cases")
+```
+
+
+
+
+
