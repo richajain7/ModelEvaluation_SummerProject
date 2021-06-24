@@ -99,7 +99,31 @@ truth_plot_USonly <- truth_data %>% ggplot(aes(x = target_end_date,
 truth_plot_USonly + labs(title = "Incident Cases Truth Data US", subtitle = "until August 15", x = "Date", y = "Incident Cases")
 ```
 
+## Every Model Summer
+```{r}
+the_timezeros_summer <- seq(from = as.Date("2020-06-15") , to = as.Date("2020-08-15"), by="days") 
+forecasts_data_all <- load_forecasts( 
+                                 forecast_dates = the_timezeros_summer,
+                                 locations = c("12", "48", "25", "36", "06", "26"), 
+                                 targets = paste(1:4, "wk ahead inc case"), 
+                                 hub = "US")
+```
+```{r}
+min_date_summer <- forecasts_data_all %>% group_by(model) %>% summarise(min_date = min(forecast_date))
+min_date_summer
+```
 
-
-
+## Every Model Winter
+```{r}
+the_timezeros_winter <- seq(from = as.Date("2020-10-15") , to = as.Date("2020-12-31"), by="days") 
+forecasts_data_winter <- load_forecasts( 
+                                 forecast_dates = the_timezeros_winter,
+                                 locations = c("12", "48", "25", "36", "06", "26"), 
+                                 targets = paste(1:4, "wk ahead inc case"), 
+                                 hub = "US")
+```
+```{r}
+min_date_winter <- forecasts_data_winter %>% group_by(model) %>% summarise(min_date = min(forecast_date))
+min_date_winter
+```
 

@@ -1,0 +1,75 @@
+---
+title: "project_graphs"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(covidHubUtils)
+library(tidyverse)
+library(DT)
+```
+
+## Option 2: looking at the nov-dec time period from nov1 to dec31
+```{r}
+timezeros_novdec <- seq(from = as.Date("2020-11-01") , to = as.Date("2020-12-31"), by="days") 
+
+truth_data_novdec <- load_truth(truth_source = "JHU", 
+                         target_variable = "inc case", 
+                         truth_end_date = "2020-12-31", 
+                         locations = c("12", "48", "25", "36", "06", "26"))
+
+forecasts_data_novdec <- load_forecasts(models = c("COVIDhub-baseline", "CU-select", 
+                                            "OliverWyman-Navigator", "LANL-GrowthRate",
+                                            "IowaStateLW-STEM", "JHU_IDD-CovidSP", "UVA-Ensemble"), 
+                                 forecast_dates = timezeros_novdec,
+                                 locations = c("12", "48", "25", "36", "06", "26"), 
+                                 targets = paste(1:4, "wk ahead inc case"), 
+                                 hub = "US")
+
+scored_forecasts_novdec <- score_forecasts(forecasts = forecasts_data_novdec, 
+                                    truth=truth_data_novdec, 
+                                    return_format = "wide")
+
+#min_date_novdec <- forecasts_data_novdec %>% group_by(model) %>% summarise(min_date = min(forecast_date))
+#min_date_novdec
+```
+#Fig 1:  Case truth data (no forecasts)
+```{r}
+p <- plot_forecasts(forecast_data = forecasts_data_novdec, 
+                    truth_source = "JHU",
+                    target_variable = "inc case",  
+                    intervals = c(.5, .8, .95),
+                    facet = .~location_name,
+                    fill_by_model = TRUE,
+                    plot = FALSE) 
+p +
+  scale_x_date(name=NULL, date_breaks = "1 months", date_labels = "%b") +
+  theme(axis.ticks.length.x = unit(0.5, "cm"),
+    axis.text.x = element_text(vjust = 7, hjust = -0.2))
+```
+```{r}
+dates_tibble <- tibble(
+  location_name = c("California", "Florida", "Massachusetts", "Michigan", "New York", "Texas"),
+  date = as.Date(c('2020-12-03','2020-12-17',"2020-12-08","2020-12-07","2020-12-11","2020-11-25"))
+)
+
+truth_plot <- truth_data_novdec %>% ggplot(aes(x = target_end_date, 
+             y = value, 
+             color = location_name)) + 
+  geom_point() +
+  geom_smooth(se=FALSE) + 
+  facet_wrap(.~location_name) + 
+  theme_linedraw() 
+
+
+truth_plot+ 
+  geom_vline(aes(xintercept = date), dates_tibble) + labs(title = "Incident Cases Truth Data", x = "Date", y = "Incident Cases", color = "Location")
+```
+
+#Fig 2: line graph of WIS score over time  (by model)
+
+
