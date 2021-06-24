@@ -34,12 +34,20 @@ scored_forecasts_novdec <- score_forecasts(forecasts = forecasts_data_novdec,
                                     truth=truth_data_novdec, 
                                     return_format = "wide")
 
+forecasts_data_unique_novdec <-  forecasts_data_novdec %>%
+  mutate(sat_fcast_week = as.Date(calc_target_week_end_date(forecast_date, horizon = 0))) %>%
+  group_by(model, location, sat_fcast_week, horizon, quantile) %>%
+  mutate(forecast_in_wk = row_number(), 
+         last_forecast_in_wk = forecast_in_wk == max(forecast_in_wk)) %>% 
+  filter(last_forecast_in_wk) %>%
+  ungroup()
+
 #min_date_novdec <- forecasts_data_novdec %>% group_by(model) %>% summarise(min_date = min(forecast_date))
 #min_date_novdec
 ```
 #Fig 1:  Case truth data (no forecasts)
 ```{r}
-p <- plot_forecasts(forecast_data = forecasts_data_novdec, 
+p <- plot_forecasts(forecast_data = forecasts_data_unique_novdec, 
                     truth_source = "JHU",
                     target_variable = "inc case",  
                     intervals = c(.5, .8, .95),
@@ -60,8 +68,7 @@ dates_tibble <- tibble(
 truth_plot <- truth_data_novdec %>% ggplot(aes(x = target_end_date, 
              y = value, 
              color = location_name)) + 
-  geom_point() +
-  geom_smooth(se=FALSE) + 
+  geom_line() +
   facet_wrap(.~location_name) + 
   theme_linedraw() 
 
@@ -71,5 +78,12 @@ truth_plot+
 ```
 
 #Fig 2: line graph of WIS score over time  (by model)
-
+## Note: need to figure out how to group by color
+```{r}
+scores_novdec <- scored_forecasts_novdec %>%
+  dplyr::group_by(model, target_end_date) %>% 
+  dplyr::summarise(wis = mean(wis)) 
+scores_novdec %>% 
+  ggplot(aes(x = target_end_date, y = wis, color = model)) + geom_line()
+```
 
