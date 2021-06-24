@@ -87,3 +87,8 @@ scores_novdec %>%
   ggplot(aes(x = target_end_date, y = wis, color = model)) + geom_line()
 ```
 
+##Fig3: Line graph faceted by location 
+```{r}
+
+```
+
