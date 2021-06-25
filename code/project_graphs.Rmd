@@ -93,6 +93,7 @@ scores_novdec_location <- scored_forecasts_novdec %>%
   dplyr::group_by(location, model, target_end_date) %>% 
   dplyr::summarise(wis = mean(wis)) 
 scores_novdec_location %>% 
-  ggplot(aes(x = target_end_date, y = wis, color = model)) + geom_line() + facet_wrap(.~location)
+  ggplot(aes(x = target_end_date, y = wis, color = model)) + geom_line() + facet_wrap(.~location) + labs(title = "WIS Scores by State and Model", x = "Date", y = "WIS Score", color = "Location")
+```
 ```
 
