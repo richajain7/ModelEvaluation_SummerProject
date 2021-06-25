@@ -24,7 +24,7 @@ truth_data_novdec <- load_truth(truth_source = "JHU",
 
 forecasts_data_novdec <- load_forecasts(models = c("COVIDhub-baseline", "CU-select", 
                                             "OliverWyman-Navigator", "LANL-GrowthRate",
-                                            "IowaStateLW-STEM", "JHU_IDD-CovidSP", "UVA-Ensemble"), 
+                                            "IowaStateLW-STEM", "JHU_IDD-CovidSP", "UVA-Ensemble", "JHUAPL-Bucky"), 
                                  forecast_dates = timezeros_novdec,
                                  locations = c("12", "48", "25", "36", "06", "26"), 
                                  targets = paste(1:4, "wk ahead inc case"), 
@@ -84,10 +84,11 @@ scores_novdec <- scored_forecasts_novdec %>%
   dplyr::group_by(model, target_end_date) %>% 
   dplyr::summarise(wis = mean(wis)) 
 scores_novdec %>% 
-  ggplot(aes(x = target_end_date, y = wis, color = model)) + geom_line()
+  ggplot(aes(x = target_end_date, y = wis, color = model)) + geom_line() + labs(title = "WIS Score by Model", x = "Date", y = "WIS Score", color = "Location")
 ```
 
 ##Fig3: Line graph faceted by location 
+## Note: Need to add in dotted lines for state specific policy changes
 ```{r}
 scores_novdec_location <- scored_forecasts_novdec %>%
   dplyr::group_by(location, model, target_end_date) %>% 
@@ -95,5 +96,24 @@ scores_novdec_location <- scored_forecasts_novdec %>%
 scores_novdec_location %>% 
   ggplot(aes(x = target_end_date, y = wis, color = model)) + geom_line() + facet_wrap(.~location) + labs(title = "WIS Scores by State and Model", x = "Date", y = "WIS Score", color = "Location")
 ```
+
+##Table1: Number of observations for each model
+```{r}
+num_obs <- forecasts_data_unique_novdec %>% count(model)
+DT::datatable(num_obs)
+```
+
+
+##Table2: Average WIS scores across models 
+```{r}
+avg_wis <- scored_forecasts_novdec %>% group_by(model) %>% summarise(avg = mean(wis))
+DT::datatable(avg_wis)
+```
+
+
+##Table3: Average MAE over all models (abs_error)
+```{r}
+avg_mae <- scored_forecasts_novdec %>% group_by(model) %>% summarise(avg = mean(abs_error))
+DT::datatable(avg_mae)
 ```
 
