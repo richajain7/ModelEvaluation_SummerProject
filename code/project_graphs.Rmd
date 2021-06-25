@@ -89,6 +89,10 @@ scores_novdec %>%
 
 ##Fig3: Line graph faceted by location 
 ```{r}
-
+scores_novdec_location <- scored_forecasts_novdec %>%
+  dplyr::group_by(location, model, target_end_date) %>% 
+  dplyr::summarise(wis = mean(wis)) 
+scores_novdec_location %>% 
+  ggplot(aes(x = target_end_date, y = wis, color = model)) + geom_line() + facet_wrap(.~location)
 ```
 
