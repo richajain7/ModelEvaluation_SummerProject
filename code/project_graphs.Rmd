@@ -18,7 +18,7 @@ library(DT)
 timezeros_novdec <- seq(from = as.Date("2020-11-01") , to = as.Date("2020-12-31"), by="days") 
 
 truth_data_novdec <- load_truth(truth_source = "JHU", 
-                         target_variable = "inc case", 
+                         target_variable = "inc case",
                          truth_end_date = "2020-12-31", 
                          locations = c("12", "48", "25", "36", "06", "26"))
 
@@ -52,6 +52,7 @@ p <- plot_forecasts(forecast_data = forecasts_data_unique_novdec,
                     target_variable = "inc case",  
                     intervals = c(.5, .8, .95),
                     facet = .~location_name,
+                    facet_scales = "free_y",
                     fill_by_model = TRUE,
                     plot = FALSE) 
 p +
@@ -99,8 +100,15 @@ scored_forecasts_novdec$type[scored_forecasts_novdec$model == "JHU_IDD-CovidSP"]
 scores_novdec_type <- scored_forecasts_novdec %>%
   dplyr::group_by(model, type, target_end_date) %>% 
   dplyr::summarise(wis = mean(wis)) 
-scores_novdec_type %>% 
-  ggplot(aes(x = target_end_date, y = wis, color = type)) + geom_smooth(se=F) + labs(title = "WIS Score by Type of Model", x = "Date", y = "WIS Score", color = "Model Type")
+scores_novdec_type%>% 
+  ggplot(aes(x = target_end_date, y = wis, color = type)) + geom_point() + labs(title = "WIS Score by Type of Model", x = "Date", y = "WIS Score", color = "Model Type")
+
+#group and facet by horizon
+scores_novdec_horizon <- scored_forecasts_novdec %>%
+  dplyr::group_by(model, type, horizon) %>% 
+  dplyr::summarise(wis = mean(wis)) 
+scores_novdec_horizon %>% 
+  ggplot(aes(x = horizon, y = wis, color = type)) + geom_point() + facet_wrap(.~horizon) + labs(title = "WIS Score by Type of Model", x = "Date", y = "WIS Score", color = "Model Type")
 ```
 
 ##Fig3: Line graph faceted by location 
@@ -118,7 +126,7 @@ score_plots <- scores_novdec_location %>%
   ggplot(aes(x = target_end_date, y = wis, color = model)) + geom_line() + facet_wrap(.~location) + theme_linedraw()
 
 score_plots + 
-  geom_vline(aes(xintercept = date), dates_tibble_nums) + labs(title = "WIS Scores by State and Model", x = "Date", y = "WIS Score", color = "Location") 
+  geom_vline(aes(xintercept = date), dates_tibble_nums) + labs(title = "WIS Scores by State and Model", x = "Date", y = "WIS Score", color = "Model") 
 ```
 
 ##Table1: Number of observations for each model
@@ -140,4 +148,16 @@ DT::datatable(avg_wis)
 avg_mae <- scored_forecasts_novdec %>% group_by(model) %>% summarise(avg = mean(abs_error))
 DT::datatable(avg_mae)
 ```
+
+## Heatmap
+```{r}
+scored_forecasts_novdec %>%
+  dplyr::group_by(model, horizon) %>%
+  dplyr::summarise(wis = mean(wis)) %>%
+  scoringutils::score_heatmap(metric = "wis", x = "horizon")
+```
+
+
+
+
 

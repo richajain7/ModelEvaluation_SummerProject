@@ -29,14 +29,14 @@ Many of the models submitting to the COVID-19 Forecast Hub incorporate data abou
 * Target: Incident Cases 
 * Horizons:
 * Models: 
-  + 2 models with both mobility and social distancing
-    + CU-select, OliverWynman-Navigator, JHUAPL-Bucky
-  + 2 models with neither mobility nor social distancing
-    + COVIDhub-baseline, LANL-GrowthRate
-  + 2 models with only mobility 
-    + IowaStateLW-STEM, UVA-Ensemble
-  + 1 model with only social distancing
-    +JHU_IDD-CovidSP
+  * 2 models with both mobility and social distancing
+    * CU-select, OliverWyman-Navigator, JHUAPL-Bucky
+  * 2 models with neither mobility nor social distancing
+    * COVIDhub-baseline, LANL-GrowthRate
+  * 2 models with only mobility 
+    * IowaStateLW-STEM, UVA-Ensemble
+  * 1 model with only social distancing
+    * JHU_IDD-CovidSP
 
 *Step 3: Evaluation graphs* 
 
@@ -46,3 +46,122 @@ Many of the models submitting to the COVID-19 Forecast Hub incorporate data abou
 
 * Exposure / variable : social distancing, data sources, model type
 
+**Key Information about the Locations** 
+
+(maybe change timelines to just 1 key date from summer 2020, winter 2020, and now)
+
+Three of the locations that were chosen either never had a mask mandate or removed the mask mandate early in 2021 (FL, TX, MA) while the other three locations plan to remove mask mandates sometime in the summer of 2021 (NY, CA, MI). 
+
+*Florida Timeline*
+
+* March 9 2020: state of emergency
+* April 1 2020: stay at home orders
+* May 4 2020: reopening begings
+* July 11 2020: Disney reopens
+* December 17 2020: reported 13148 new cases (largest since July 2020)
+* (Never had a mask mandate)
+
+*Texas Timeline*
+
+* March 13 2020: state disaster declared
+* March 19 2020: state mandates
+* March 24 2020: stay at home orders
+* May 1 2020: phase 1 reopening 
+* May 18 2020: phase 2 reopening 
+* June 3 2020: phase 3 reopening 
+* June 26 2020: reopening paused 
+* July 2 2020: mask mandate put in place
+* Septemeber 17 2020: reopening starts up again 
+* November 21-25 2020: new infections and cases increase
+* December 2020: first month with more than 6000 fatalities
+* March 2 2021: remove mask mandate
+* March 10 2021: state fully reopens
+
+*Massachusetts Timeline*
+
+* March 13 2020: limited gatherings throughout the state
+* March 15 2020: more restrictions put into place
+* March 23 2020: stay at home orders
+* May 6 2020: mask mandate put in place
+* May 18 2020: phase 1 reopening
+* June 8 2020: phase 2 reopening
+* July 2 2020: phase 3 reopening 
+* September 29 2020: phase 3 step 2 reopening 
+* November 2 2020: statewide curfew
+* December 8 2020: all cities/towns rollback to phase 3 step 1 of reopening
+* May 29: state full reopens, no more mask mandate
+
+*New York Timeline*
+
+* March 7 2020: state of emergency declared
+* April 15 2020: mask mandate put in place
+* April-May 2020: stay at home orders
+* May 15 2020: slight reopening
+* June 8 2020: NYC phase 1 reopening
+* June 22 2020: NYC phase 2 reopening 
+* July 6 2020: phase 3 reopening 
+* July 19 2020: phase 4 reopening 
+* November 13 2020: new restrictions 
+* December 1 2020: slight reopening of schools 
+* December 11 2020: slight reopening of gyms and salons
+* December 23 2020: full reopening of gyms 
+* February 15 2021: NYC middle schools go back to in person 
+* March 22 2021: NYC high schools go back to in person
+
+*California Timeline*
+
+* March 4 2020: state of emergency declared
+* March 12 2020: cancel large events
+* March 19 2020: stay at home orders
+* May 8 2020: beginning of phase 2 reopening 
+* May 26 2020: phase 3 reopening 
+* June 18 2020: mask mandate put in place
+* July 13 2020: 30 counties ordered to close indoor businesses
+* July 22 2020: CA surpasses NY for confirmed cases
+* October 10 2020: loosen restrictions on private outdoor gatherings
+* November 19 2020: statewide curfew
+* December 3 2020: new stay at home oder
+* January 25 2021: no counties have stay at home order
+
+*Michigan Timeline*
+
+* February 28 2020: state will activate emergency operations center
+* March 10 2020: state of emergency declared
+* March 13 2020: close schools and place restrictions on gatherings
+* March 16 2020: close public places
+* March 23 2020: stay at home orders
+* April 9 2020: extend stay at home orders through all of April 
+* May 1 2020: extend state of emergency 
+* May 22 2020: extend stay at home orders until June 12 and state of emergency until June 19
+* October 5 2020: mask mandate put in place
+* October 9 2020: public places reopen
+* December 7 2020: statewide partial shutdown 
+* December 18 2020: some indoor spaces reopen 
+* March 5 2021: loosen restrictions 
+* May 4 2021: state relaxes restrictions on masks 
+* June 1 2021: crowd size restrictions for outdoor events lifted
+* July 1 2021: all mandates lifted
+
+
+
+**Key Information about the Models that were chosen**
+
+Model | Case Data | Model Type | Social Distancing Assumptions? | Mobility Data? | Notes
+------------- | ------------- | ------------- | ------------- | ------------- | -------------
+CU-select | Johns Hopkins, USAFacts | SEIR model | yes | yes | NPI Scenarios
+OliverWyman-Navigator | JHU CSSE | Compartmental models | yes | yes (Apple, Google) | have models with social distancing, mobility, what if scenarios 
+JHUAPL-Bucky | JHU CSSE, CDC | Spatial compartment model | yes | yes | accounts for NPIs
+COVIDhub-baseline | JHU CSSE | Median prediction at all future horizons | no | no | 
+LANL-GrowthRate | JHU CSSE | Statistical dynamical growth model | no | no |
+IowaStateLW-STEM | NYT, Johns Hopkins, Covid Tracking Project, USA Facts | Nonparametric space-time disease transmission model | no | yes | 
+UVA-Ensemble | CDC | AR, ISTM, SEIR model | no | yes (Baidu) | 
+
+JHU_IDD-CovidSP | Johns Hopkins | State-level metapopulation model with commuting and stochastic SEIR disease dynamics with social-distancing indicators | yes | no |
+
+**Results**
+
+*Summary of Models*
+*Model Accuracy*
+*Model Accuracy by Group*
+
+**Discussion**
