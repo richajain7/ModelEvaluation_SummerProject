@@ -108,7 +108,7 @@ scores_novdec_horizon <- scored_forecasts_novdec %>%
   dplyr::group_by(model, type, horizon) %>% 
   dplyr::summarise(wis = mean(wis)) 
 scores_novdec_horizon %>% 
-  ggplot(aes(x = horizon, y = wis, color = type)) + geom_point() + facet_wrap(.~horizon) + labs(title = "WIS Score by Type of Model", x = "Date", y = "WIS Score", color = "Model Type")
+  ggplot(aes(x = horizon, y = wis, color = type)) + geom_point() + facet_wrap(.~horizon) + labs(title = "WIS Score by Type of Model and Horizon", x = "Horizon", y = "WIS Score", color = "Model Type")
 ```
 
 ##Fig3: Line graph faceted by location 
