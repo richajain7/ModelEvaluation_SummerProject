@@ -1,0 +1,164 @@
+---
+title: "WIS Scores"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(covidHubUtils)
+library(tidyverse)
+library(DT)
+```
+
+```{r}
+timezeros_novjan <- seq(from = as.Date("2020-11-01") , to = as.Date("2021-2-01"), by="days") 
+
+truth_data_novjan <- load_truth(truth_source = "JHU", 
+                         target_variable = "inc case",
+                         truth_end_date = "2020-12-31", 
+                         locations = c("12", "48", "25", "36", "06", "26"))
+
+forecasts_data_novjan <- load_forecasts(models = c("COVIDhub-baseline", "CU-select", 
+                                            "OliverWyman-Navigator", "LANL-GrowthRate",
+                                            "IowaStateLW-STEM", "JHU_IDD-CovidSP", "UVA-Ensemble", "JHUAPL-Bucky"), 
+                                 forecast_dates = timezeros_novdec,
+                                 locations = c("12", "48", "25", "36", "06", "26"), 
+                                 targets = paste(1:4, "wk ahead inc case"), 
+                                 hub = "US")
+
+scored_forecasts_novjan <- score_forecasts(forecasts = forecasts_data_novdec, 
+                                    truth=truth_data_novdec, 
+                                    return_format = "wide")
+
+forecasts_data_unique_novjan <-  forecasts_data_novjan %>%
+  mutate(sat_fcast_week = as.Date(calc_target_week_end_date(forecast_date, horizon = 0))) %>%
+  group_by(model, location, sat_fcast_week, horizon, quantile) %>%
+  mutate(forecast_in_wk = row_number(), 
+         last_forecast_in_wk = forecast_in_wk == max(forecast_in_wk)) %>% 
+  filter(last_forecast_in_wk) %>%
+  ungroup()
+```
+
+
+## PART 2
+WIS scores for each state before and after dec 25 2021
+Relative WIS post/pre in loc X, month M
+california
+```{r}
+scores_california_before <- scored_forecasts_novjan %>% filter(target_end_date <= "2020-12-25" & location == "06") %>% 
+  dplyr::group_by(model) %>% 
+  dplyr::summarise(wis_before = mean(wis)) 
+scores_california_before
+
+scores_california_after <- scored_forecasts_novjan %>% filter(target_end_date > "2020-12-25" & location == "06") %>% 
+  dplyr::group_by(model) %>% 
+  dplyr::summarise(wis_after = mean(wis)) 
+scores_california_after
+
+scores_california_dec25 <- scores_california_before %>% left_join(scores_california_after, by = "model")
+
+rel_wis_cali <- scores_california_dec25 %>% group_by(model) %>% summarise(rel_wis = wis_after/wis_before)
+rel_wis_cali
+```
+
+
+WIS scores for each state before and after dec 25 2021
+Relative WIS post/pre in loc X, month M
+florida
+```{r}
+scores_florida_before <- scored_forecasts_novjan %>% filter(target_end_date <= "2020-12-25" & location == "12") %>% 
+  dplyr::group_by(model) %>% 
+  dplyr::summarise(wis_before = mean(wis)) 
+scores_florida_before
+
+scores_florida_after <- scored_forecasts_novjan %>% filter(target_end_date > "2020-12-25" & location == "12") %>% 
+  dplyr::group_by(model) %>% 
+  dplyr::summarise(wis_after = mean(wis)) 
+scores_florida_after
+
+scores_florida_dec25 <- scores_florida_before %>% left_join(scores_florida_after, by = "model")
+
+rel_wis_florida <- scores_florida_dec25 %>% group_by(model) %>% summarise(rel_wis = wis_after/wis_before)
+rel_wis_florida
+```
+
+WIS scores for each state before and after dec 25 2021
+Relative WIS post/pre in loc X, month M
+massachusetts
+```{r}
+scores_mass_before <- scored_forecasts_novjan %>% filter(target_end_date <= "2020-12-25" & location == "25") %>% 
+  dplyr::group_by(model) %>% 
+  dplyr::summarise(wis_before = mean(wis)) 
+scores_mass_before
+
+scores_mass_after <- scored_forecasts_novjan %>% filter(target_end_date > "2020-12-25" & location == "25") %>% 
+  dplyr::group_by(model) %>% 
+  dplyr::summarise(wis_after = mean(wis)) 
+scores_mass_after
+
+scores_mass_dec25 <- scores_mass_before %>% left_join(scores_mass_after, by = "model")
+
+rel_wis_mass <- scores_mass_dec25 %>% group_by(model) %>% summarise(rel_wis = wis_after/wis_before)
+rel_wis_mass
+```
+
+WIS scores for each state before and after dec 25 2021
+Relative WIS post/pre in loc X, month M
+michigan
+```{r}
+scores_michigan_before <- scored_forecasts_novjan %>% filter(target_end_date <= "2020-12-25" & location == "26") %>% 
+  dplyr::group_by(model) %>% 
+  dplyr::summarise(wis_before = mean(wis)) 
+scores_michigan_before
+
+scores_michigan_after <- scored_forecasts_novjan %>% filter(target_end_date > "2020-12-25" & location == "26") %>% 
+  dplyr::group_by(model) %>% 
+  dplyr::summarise(wis_after = mean(wis)) 
+scores_california_after
+
+scores_michigan_dec25 <- scores_michigan_before %>% left_join(scores_michigan_after, by = "model")
+
+rel_wis_mich <- scores_michigan_dec25 %>% group_by(model) %>% summarise(rel_wis = wis_after/wis_before)
+rel_wis_mich
+```
+
+WIS scores for each state before and after dec 25 2021
+Relative WIS post/pre in loc X, month M
+new york
+```{r}
+scores_newyork_before <- scored_forecasts_novjan %>% filter(target_end_date <= "2020-12-25" & location == "36") %>% 
+  dplyr::group_by(model) %>% 
+  dplyr::summarise(wis_before = mean(wis)) 
+scores_newyork_before
+
+scores_newyork_after <- scored_forecasts_novjan %>% filter(target_end_date > "2020-12-25" & location == "36") %>% 
+  dplyr::group_by(model) %>% 
+  dplyr::summarise(wis_after = mean(wis)) 
+scores_newyork_after
+
+scores_newyork_dec25 <- scores_newyork_before %>% left_join(scores_newyork_after, by = "model")
+
+rel_wis_ny <- scores_newyork_dec25 %>% group_by(model) %>% summarise(rel_wis = wis_after/wis_before)
+rel_wis_ny
+```
+
+WIS scores for each state before and after dec 25 2021
+Relative WIS post/pre in loc X, month M
+texas
+```{r}
+scores_texas_before <- scored_forecasts_novjan %>% filter(target_end_date <= "2020-12-25" & location == "48") %>% 
+  dplyr::group_by(model) %>% 
+  dplyr::summarise(wis_before = mean(wis)) 
+scores_texas_before
+
+scores_texas_after <- scored_forecasts_novjan %>% filter(target_end_date > "2020-12-25" & location == "48") %>% 
+  dplyr::group_by(model) %>% 
+  dplyr::summarise(wis_after = mean(wis)) 
+scores_texas_after
+
+scores_texas_dec25 <- scores_texas_before %>% left_join(scores_texas_after, by = "model")
+
+rel_wis_texas <- scores_texas_dec25 %>% group_by(model) %>% summarise(rel_wis = wis_after/wis_before)
+rel_wis_texas
+```
+
