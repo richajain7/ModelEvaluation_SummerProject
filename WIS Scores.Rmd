@@ -10,155 +10,395 @@ library(tidyverse)
 library(DT)
 ```
 
-```{r}
-timezeros_novjan <- seq(from = as.Date("2020-11-01") , to = as.Date("2021-2-01"), by="days") 
-
-truth_data_novjan <- load_truth(truth_source = "JHU", 
-                         target_variable = "inc case",
-                         truth_end_date = "2020-12-31", 
-                         locations = c("12", "48", "25", "36", "06", "26"))
-
-forecasts_data_novjan <- load_forecasts(models = c("COVIDhub-baseline", "CU-select", 
-                                            "OliverWyman-Navigator", "LANL-GrowthRate",
-                                            "IowaStateLW-STEM", "JHU_IDD-CovidSP", "UVA-Ensemble", "JHUAPL-Bucky"), 
-                                 forecast_dates = timezeros_novdec,
-                                 locations = c("12", "48", "25", "36", "06", "26"), 
-                                 targets = paste(1:4, "wk ahead inc case"), 
-                                 hub = "US")
-
-scored_forecasts_novjan <- score_forecasts(forecasts = forecasts_data_novdec, 
-                                    truth=truth_data_novdec, 
-                                    return_format = "wide")
-
-forecasts_data_unique_novjan <-  forecasts_data_novjan %>%
-  mutate(sat_fcast_week = as.Date(calc_target_week_end_date(forecast_date, horizon = 0))) %>%
-  group_by(model, location, sat_fcast_week, horizon, quantile) %>%
-  mutate(forecast_in_wk = row_number(), 
-         last_forecast_in_wk = forecast_in_wk == max(forecast_in_wk)) %>% 
-  filter(last_forecast_in_wk) %>%
-  ungroup()
-```
-
+when mobility changes, models with mobility do better
 
 ## PART 2
-WIS scores for each state before and after dec 25 2021
-Relative WIS post/pre in loc X, month M
 california
 ```{r}
-scores_california_before <- scored_forecasts_novjan %>% filter(target_end_date <= "2020-12-25" & location == "06") %>% 
-  dplyr::group_by(model) %>% 
+scores_california_before_dec3 <- scored_forecasts %>% filter(target_end_date <= "2020-12-03" & target_end_date >= "2020-10-03" & location == "06") %>% 
+  dplyr::group_by(model, location) %>% 
   dplyr::summarise(wis_before = mean(wis)) 
-scores_california_before
+scores_california_before_dec3
 
-scores_california_after <- scored_forecasts_novjan %>% filter(target_end_date > "2020-12-25" & location == "06") %>% 
-  dplyr::group_by(model) %>% 
+scores_california_after_dec3 <- scored_forecasts  %>% filter(target_end_date > "2020-12-03" & target_end_date <= "2021-02-03" & location == "06") %>% 
+  dplyr::group_by(model, location) %>% 
   dplyr::summarise(wis_after = mean(wis)) 
-scores_california_after
+scores_california_after_dec3
 
-scores_california_dec25 <- scores_california_before %>% left_join(scores_california_after, by = "model")
+scores_california_dec3 <- scores_california_before_dec3 %>% left_join(scores_california_after_dec3, by = "model")
 
-rel_wis_cali <- scores_california_dec25 %>% group_by(model) %>% summarise(rel_wis = wis_after/wis_before)
-rel_wis_cali
+rel_wis_cali_dec3 <- scores_california_dec3 %>% group_by(model) %>% mutate(rel_wis_california_dec3 = wis_after/wis_before) 
+rel_wis_cali_dec3 <- rel_wis_cali_dec3 %>% select(model, rel_wis_california_dec3)
+
+truth_plot_cali_dec3 <- truth_data %>% filter(location == "06") %>% ggplot(aes(x = target_end_date, 
+             y = value, 
+             color = location_name)) + geom_vline(xintercept = as.Date("2020-12-03")) +
+  geom_line() +
+  theme_linedraw() +
+  labs(title = "Incident Cases Truth Data", subtitle = "California, before and after December 23", x = "Date", y = "Incident Cases", color = "Location")
+truth_plot_cali_dec3 + theme(legend.position = "none")
+
+wis_plot_cali_dec3 <- rel_wis_cali_dec3 %>% ggplot(aes(x=model, y = rel_wis_cali_dec3$rel_wis_california_dec3, fill = model)) + geom_col() + theme_linedraw() + labs(title = "WIS by Model", subtitle = "California, before and after December 3", x = "Model Name", y = "WIS") + theme(legend.title = element_blank()) + theme(axis.text.x = element_text(angle = 90))
+wis_plot_cali_dec3
+                                                                                                                                                    
+```
+
+```{r}
+scores_california_before_nov19 <- scored_forecasts  %>% filter(target_end_date <= "2020-11-19" & target_end_date >= "2020-09-19" & location == "06") %>% 
+  dplyr::group_by(model, location) %>% 
+  dplyr::summarise(wis_before = mean(wis)) 
+scores_california_before_nov19
+
+scores_california_after_nov19 <- scored_forecasts  %>% filter(target_end_date > "2020-11-19" & target_end_date <= "2021-01-19" & location == "06") %>% 
+  dplyr::group_by(model, location) %>% 
+  dplyr::summarise(wis_after = mean(wis)) 
+scores_california_after_nov19
+
+scores_california_nov19 <- scores_california_before_nov19 %>% left_join(scores_california_after_nov19, by = "model")
+
+rel_wis_cali_nov19 <- scores_california_nov19 %>% group_by(model) %>% mutate(rel_wis_california_nov19 = wis_after/wis_before)
+rel_wis_cali_nov19 <- rel_wis_cali_nov19 %>% select(model,rel_wis_california_nov19)
+rel_wis_cali_nov19
+
+truth_plot_cali_nov19 <- truth_data %>% filter(location == "06") %>% ggplot(aes(x = target_end_date, 
+             y = value, 
+             color = location_name)) + geom_vline(xintercept = as.Date("2020-11-19")) +
+  geom_line() +
+  theme_linedraw() +
+  labs(title = "Incident Cases Truth Data", subtitle = "California, before and after November 19", x = "Date", y = "Incident Cases", color = "Location")
+truth_plot_cali_nov19
+
+wis_plot_cali_nov19 <- rel_wis_cali_nov19 %>% ggplot(aes(x=model, y = rel_wis_cali_nov19$rel_wis_california_nov19, fill = model)) + geom_col() + theme_linedraw() + labs(title = "WIS by Model", subtitle = "California, before and after November 19", x = "Model Name", y = "WIS") + theme(legend.title = element_blank()) + theme(axis.text.x = element_text(angle = 90))
+wis_plot_cali_nov19
+
 ```
 
 
-WIS scores for each state before and after dec 25 2021
-Relative WIS post/pre in loc X, month M
 florida
 ```{r}
-scores_florida_before <- scored_forecasts_novjan %>% filter(target_end_date <= "2020-12-25" & location == "12") %>% 
-  dplyr::group_by(model) %>% 
+scores_florida_before_dec17 <- scored_forecasts  %>% filter(target_end_date <= "2020-12-17" & target_end_date >= "2020-10-17" & location == "12") %>% 
+  dplyr::group_by(model, location) %>% 
   dplyr::summarise(wis_before = mean(wis)) 
-scores_florida_before
+scores_florida_before_dec17
 
-scores_florida_after <- scored_forecasts_novjan %>% filter(target_end_date > "2020-12-25" & location == "12") %>% 
-  dplyr::group_by(model) %>% 
+scores_florida_after_dec17 <- scored_forecasts  %>% filter(target_end_date > "2020-12-17" & target_end_date <= "2021-02-17" & location == "12") %>% 
+  dplyr::group_by(model, location) %>% 
   dplyr::summarise(wis_after = mean(wis)) 
-scores_florida_after
+scores_florida_after_dec17
 
-scores_florida_dec25 <- scores_florida_before %>% left_join(scores_florida_after, by = "model")
+scores_florida_dec17 <- scores_florida_before_dec17 %>% left_join(scores_florida_after_dec17, by = "model")
 
-rel_wis_florida <- scores_florida_dec25 %>% group_by(model) %>% summarise(rel_wis = wis_after/wis_before)
-rel_wis_florida
+rel_wis_florida_dec17 <- scores_florida_dec17 %>% group_by(model) %>% mutate(rel_wis_florida_dec17 = wis_after/wis_before)
+rel_wis_florida_dec17 <- rel_wis_florida_dec17 %>% select(model,rel_wis_florida_dec17)
+rel_wis_florida_dec17
+
+truth_plot_florida_dec17 <- truth_data %>% filter(location == "12") %>% ggplot(aes(x = target_end_date, 
+             y = value, 
+             color = location_name)) + geom_vline(xintercept = as.Date("2020-12-17")) +
+  geom_line() +
+  theme_linedraw() +
+  labs(title = "Incident Cases Truth Data", subtitle = "Florida, before and after December 17", x = "Date", y = "Incident Cases", color = "Location")
+truth_plot_florida_dec17
+
+
+wis_plot_florida_dec17 <- rel_wis_florida_dec17 %>% ggplot(aes(x=model, y = rel_wis_florida_dec17, fill = model)) + geom_col() + theme_linedraw() + labs(title = "WIS by Model", subtitle = "Florida, before and after December 17", x = "Model Name", y = "WIS") + theme(legend.title = element_blank()) + theme(axis.text.x = element_text(angle = 90))
+wis_plot_florida_dec17
+
 ```
 
-WIS scores for each state before and after dec 25 2021
-Relative WIS post/pre in loc X, month M
+
 massachusetts
+
 ```{r}
-scores_mass_before <- scored_forecasts_novjan %>% filter(target_end_date <= "2020-12-25" & location == "25") %>% 
-  dplyr::group_by(model) %>% 
+scores_mass_before_nov2 <- scored_forecasts  %>% filter(target_end_date <= "2020-11-02" & target_end_date >= "2020-09-02" & location == "25") %>% 
+  dplyr::group_by(model, location) %>% 
   dplyr::summarise(wis_before = mean(wis)) 
-scores_mass_before
+scores_mass_before_nov2
 
-scores_mass_after <- scored_forecasts_novjan %>% filter(target_end_date > "2020-12-25" & location == "25") %>% 
-  dplyr::group_by(model) %>% 
+scores_mass_after_nov2 <- scored_forecasts  %>% filter(target_end_date > "2020-11-02" & target_end_date <= "2021-01-02" & location == "25") %>% 
+  dplyr::group_by(model, location) %>% 
   dplyr::summarise(wis_after = mean(wis)) 
-scores_mass_after
+scores_mass_after_nov2
 
-scores_mass_dec25 <- scores_mass_before %>% left_join(scores_mass_after, by = "model")
+scores_mass_nov2 <- scores_mass_before_nov2 %>% left_join(scores_mass_after_nov2, by = "model")
 
-rel_wis_mass <- scores_mass_dec25 %>% group_by(model) %>% summarise(rel_wis = wis_after/wis_before)
-rel_wis_mass
+rel_wis_mass_nov2 <- scores_mass_nov2 %>% group_by(model) %>% mutate(rel_wis_MA_nov2 = wis_after/wis_before)
+rel_wis_mass_nov2 <- rel_wis_mass_nov2 %>% select(model, rel_wis_MA_nov2)
+rel_wis_mass_nov2
+
+truth_plot_ma_nov2 <- truth_data %>% filter(location == "25") %>% ggplot(aes(x = target_end_date, 
+             y = value, 
+             color = location_name)) + geom_vline(xintercept = as.Date("2020-11-02")) +
+  geom_line() +
+  theme_linedraw() +
+  labs(title = "Incident Cases Truth Data", subtitle = "Massachusetts, before and after November 2", x = "Date", y = "Incident Cases", color = "Location")
+truth_plot_ma_nov2
+
+wis_plot_mass_nov2<- rel_wis_mass_nov2 %>% ggplot(aes(x=model, y = rel_wis_mass_nov2$rel_wis_MA_nov2, fill = model)) + geom_col() + theme_linedraw() + labs(title = "WIS by Model", subtitle = "Massachusetts, before and after November 2", x = "Model Name", y = "WIS") + theme(legend.title = element_blank()) + theme(axis.text.x = element_text(angle = 90))
+wis_plot_mass_nov2
+
 ```
 
-WIS scores for each state before and after dec 25 2021
-Relative WIS post/pre in loc X, month M
+```{r}
+scores_mass_before_dec8 <- scored_forecasts  %>% filter(target_end_date <= "2020-12-08" & target_end_date >= "2020-10-08" & location == "25") %>% 
+  dplyr::group_by(model, location) %>% 
+  dplyr::summarise(wis_before = mean(wis)) 
+scores_mass_before_dec8
+
+scores_mass_after_dec8 <- scored_forecasts  %>% filter(target_end_date > "2020-12-08" & target_end_date <= "2021-02-08" & location == "25") %>% 
+  dplyr::group_by(model, location) %>% 
+  dplyr::summarise(wis_after = mean(wis)) 
+scores_mass_after_dec8
+
+scores_mass_dec8 <- scores_mass_before_dec8 %>% left_join(scores_mass_after_dec8, by = "model")
+
+rel_wis_mass_dec8 <- scores_mass_dec8 %>% group_by(model) %>% mutate(rel_wis_MA_dec8 = wis_after/wis_before)
+rel_wis_mass_dec8 <- rel_wis_mass_dec8 %>% select(model, rel_wis_MA_dec8)
+rel_wis_mass_dec8
+
+truth_plot_ma_dec8 <- truth_data %>% filter(location == "25") %>% ggplot(aes(x = target_end_date, 
+             y = value, 
+             color = location_name)) + geom_vline(xintercept = as.Date("2020-12-08")) +
+  geom_line() +
+  theme_linedraw() +
+  labs(title = "Incident Cases Truth Data", subtitle = "Massachusetts, before and after December 8", x = "Date", y = "Incident Cases", color = "Location")
+truth_plot_ma_dec8
+
+wis_plot_mass_dec8 <- rel_wis_mass_dec8 %>% ggplot(aes(x=model, y = rel_wis_mass_dec8$rel_wis_MA_dec8, fill = model)) + geom_col() + theme_linedraw() + labs(title = "WIS by Model", subtitle = "Massachusetts, before and after December 8", x = "Model Name", y = "WIS") + theme(legend.title = element_blank()) + theme(axis.text.x = element_text(angle = 90))
+wis_plot_mass_dec8
+
+```
+
 michigan
 ```{r}
-scores_michigan_before <- scored_forecasts_novjan %>% filter(target_end_date <= "2020-12-25" & location == "26") %>% 
-  dplyr::group_by(model) %>% 
+scores_michigan_before_dec7 <- scored_forecasts  %>% filter(target_end_date <= "2020-12-07" & target_end_date >= "2020-10-07" & location == "26") %>% 
+  dplyr::group_by(model, location) %>% 
   dplyr::summarise(wis_before = mean(wis)) 
-scores_michigan_before
+scores_michigan_before_dec7
 
-scores_michigan_after <- scored_forecasts_novjan %>% filter(target_end_date > "2020-12-25" & location == "26") %>% 
-  dplyr::group_by(model) %>% 
+scores_michigan_after_dec7 <- scored_forecasts  %>% filter(target_end_date > "2020-12-07" & target_end_date <= "2021-02-07" & location == "26") %>% 
+  dplyr::group_by(model, location) %>% 
   dplyr::summarise(wis_after = mean(wis)) 
-scores_california_after
+scores_michigan_after_dec7
 
-scores_michigan_dec25 <- scores_michigan_before %>% left_join(scores_michigan_after, by = "model")
+scores_michigan_dec7 <- scores_michigan_before_dec7 %>% left_join(scores_michigan_after_dec7, by = "model")
 
-rel_wis_mich <- scores_michigan_dec25 %>% group_by(model) %>% summarise(rel_wis = wis_after/wis_before)
-rel_wis_mich
+rel_wis_mich_dec7 <- scores_michigan_dec7 %>% group_by(model) %>% mutate(rel_wis_michigan_dec7 = wis_after/wis_before)
+rel_wis_mich_dec7 <- rel_wis_mich_dec7 %>% select(model, rel_wis_michigan_dec7)
+rel_wis_mich_dec7
+
+truth_plot_mich_dec7 <- truth_data %>% filter(location == "26") %>% ggplot(aes(x = target_end_date, 
+             y = value, 
+             color = location_name)) + geom_vline(xintercept = as.Date("2020-12-07")) +
+  geom_line() +
+  theme_linedraw() +
+  labs(title = "Incident Cases Truth Data", subtitle = "Michigan, before and after December 7", x = "Date", y = "Incident Cases", color = "Location")
+truth_plot_mich_dec7
+
+wis_plot_mich_dec7<- rel_wis_mich_dec7 %>% ggplot(aes(x=model, y = rel_wis_mich_dec7$rel_wis_michigan_dec7, fill = model)) + geom_col() + theme_linedraw() + labs(title = "WIS by Model", subtitle = "Michigan, before and after December 7", x = "Model Name", y = "WIS") + theme(legend.title = element_blank()) + theme(axis.text.x = element_text(angle = 90))
+wis_plot_mich_dec7
+
 ```
 
-WIS scores for each state before and after dec 25 2021
-Relative WIS post/pre in loc X, month M
+```{r}
+scores_michigan_before_nov3 <- scored_forecasts  %>% filter(target_end_date <= "2020-11-03" & target_end_date >= "2020-09-03" & location == "26") %>% 
+  dplyr::group_by(model, location) %>% 
+  dplyr::summarise(wis_before = mean(wis)) 
+scores_michigan_before_nov3
+
+scores_michigan_after_nov3 <- scored_forecasts  %>% filter(target_end_date > "2020-11-03" & target_end_date <= "2021-01-03" & location == "26") %>% 
+  dplyr::group_by(model, location) %>% 
+  dplyr::summarise(wis_after = mean(wis)) 
+scores_michigan_after_nov3
+
+scores_michigan_nov3 <- scores_michigan_before_nov3 %>% left_join(scores_michigan_after_nov3, by = "model")
+
+rel_wis_mich_nov3 <- scores_michigan_nov3 %>% group_by(model) %>% mutate(rel_wis_michigan_nov3 = wis_after/wis_before)
+rel_wis_mich_nov3 <- rel_wis_mich_nov3 %>% select(model, rel_wis_michigan_nov3)
+rel_wis_mich_nov3
+
+truth_plot_mich_nov3 <- truth_data %>% filter(location == "26") %>% ggplot(aes(x = target_end_date, 
+             y = value, 
+             color = location_name)) + geom_vline(xintercept = as.Date("2020-11-03")) +
+  geom_line() +
+  theme_linedraw() +
+  labs(title = "Incident Cases Truth Data", subtitle = "Michigan, before and after November 3", x = "Date", y = "Incident Cases", color = "Location")
+truth_plot_mich_nov3
+
+wis_plot_mich_nov3 <- rel_wis_mich_nov3 %>% ggplot(aes(x=model, y = rel_wis_mich_nov3$rel_wis_michigan_nov3, fill = model)) + geom_col() + theme_linedraw() + labs(title = "WIS by Model", subtitle = "Michigan, before and after November 3", x = "Model Name", y = "WIS") + theme(legend.title = element_blank()) + theme(axis.text.x = element_text(angle = 90))
+wis_plot_mich_nov3
+
+```
+
 new york
 ```{r}
-scores_newyork_before <- scored_forecasts_novjan %>% filter(target_end_date <= "2020-12-25" & location == "36") %>% 
-  dplyr::group_by(model) %>% 
+scores_newyork_before_dec14 <- scored_forecasts  %>% filter(target_end_date <= "2020-12-14" & target_end_date >= "2020-10-14" & location == "36") %>% 
+  dplyr::group_by(model, location) %>% 
   dplyr::summarise(wis_before = mean(wis)) 
-scores_newyork_before
+scores_newyork_before_dec14
 
-scores_newyork_after <- scored_forecasts_novjan %>% filter(target_end_date > "2020-12-25" & location == "36") %>% 
-  dplyr::group_by(model) %>% 
+scores_newyork_after_dec14 <- scored_forecasts  %>% filter(target_end_date > "2020-12-14" & target_end_date <= "2021-02-14" & location == "36") %>% 
+  dplyr::group_by(model, location) %>% 
   dplyr::summarise(wis_after = mean(wis)) 
-scores_newyork_after
+scores_newyork_after_dec14
 
-scores_newyork_dec25 <- scores_newyork_before %>% left_join(scores_newyork_after, by = "model")
+scores_newyork_dec14 <- scores_newyork_before_dec14 %>% left_join(scores_newyork_after_dec14, by = "model")
 
-rel_wis_ny <- scores_newyork_dec25 %>% group_by(model) %>% summarise(rel_wis = wis_after/wis_before)
-rel_wis_ny
+rel_wis_ny_dec14 <- scores_newyork_dec14 %>% group_by(model) %>% mutate(rel_wis_NY_dec14 = wis_after/wis_before)
+rel_wis_ny_dec14 <- rel_wis_ny_dec14 %>% select(model, rel_wis_NY_dec14)
+rel_wis_ny_dec14
+
+truth_plot_ny_dec14 <- truth_data %>% filter(location == "36") %>% ggplot(aes(x = target_end_date, 
+             y = value, 
+             color = location_name)) + geom_vline(xintercept = as.Date("2020-12-14")) +
+  geom_line() +
+  theme_linedraw() +
+  labs(title = "Incident Cases Truth Data", subtitle = "New York, before and after December 14", x = "Date", y = "Incident Cases", color = "Location")
+truth_plot_ny_dec14
+
+wis_plot_ny_dec14 <- rel_wis_ny_dec14 %>% ggplot(aes(x=model, y = rel_wis_NY_dec14, fill = model)) + geom_col() + theme_linedraw() + labs(title = "WIS by Model", subtitle = "New York, before and after December 14", x = "Model Name", y = "WIS") + theme(legend.title = element_blank()) + theme(axis.text.x = element_text(angle = 90))
+wis_plot_ny_dec14
+
 ```
 
-WIS scores for each state before and after dec 25 2021
-Relative WIS post/pre in loc X, month M
+```{r}
+scores_newyork_before_dec23 <- scored_forecasts  %>% filter(target_end_date <= "2020-12-23" & target_end_date >= "2020-10-23" & location == "36") %>% 
+  dplyr::group_by(model, location) %>% 
+  dplyr::summarise(wis_before = mean(wis)) 
+scores_newyork_before_dec23
+
+scores_newyork_after_dec23 <- scored_forecasts  %>% filter(target_end_date > "2020-12-23" & target_end_date <= "2021-02-23" & location == "36") %>% 
+  dplyr::group_by(model, location) %>% 
+  dplyr::summarise(wis_after = mean(wis)) 
+scores_newyork_after_dec23
+
+scores_newyork_dec23 <- scores_newyork_before_dec23 %>% left_join(scores_newyork_after_dec23, by = "model")
+
+rel_wis_ny_dec23 <- scores_newyork_dec23 %>% group_by(model) %>% mutate(rel_wis_NY_dec23 = wis_after/wis_before)
+rel_wis_ny_dec23 <- rel_wis_ny_dec23 %>% select(model, rel_wis_NY_dec23)
+rel_wis_ny_dec23
+
+truth_plot_ny_dec23 <- truth_data %>% filter(location == "36") %>% ggplot(aes(x = target_end_date, 
+             y = value, 
+             color = location_name)) + geom_vline(xintercept = as.Date("2020-12-23")) +
+  geom_line() +
+  theme_linedraw() +
+  labs(title = "Incident Cases Truth Data", subtitle = "New York, before and after December 23", x = "Date", y = "Incident Cases", color = "Location")
+truth_plot_ny_dec23
+
+wis_plot_ny_dec23 <- rel_wis_ny_dec23 %>% ggplot(aes(x=model, y = rel_wis_NY_dec23, fill = model)) + geom_col() + theme_linedraw() + labs(title = "WIS by Model", subtitle = "New York, before and after December 23", x = "Model Name", y = "WIS") + theme(legend.title = element_blank()) + theme(axis.text.x = element_text(angle = 90))
+wis_plot_ny_dec23
+
+```
+
 texas
 ```{r}
-scores_texas_before <- scored_forecasts_novjan %>% filter(target_end_date <= "2020-12-25" & location == "48") %>% 
-  dplyr::group_by(model) %>% 
+scores_texas_before_nov13 <- scored_forecasts  %>% filter(target_end_date <= "2020-11-13" & target_end_date >= "2020-09-13" & location == "48") %>% 
+  dplyr::group_by(model, location) %>% 
   dplyr::summarise(wis_before = mean(wis)) 
-scores_texas_before
+scores_texas_before_nov13
 
-scores_texas_after <- scored_forecasts_novjan %>% filter(target_end_date > "2020-12-25" & location == "48") %>% 
-  dplyr::group_by(model) %>% 
+scores_texas_after_nov13 <- scored_forecasts  %>% filter(target_end_date > "2020-11-13" & target_end_date <= "2021-01-13" & location == "48") %>% 
+  dplyr::group_by(model, location) %>% 
   dplyr::summarise(wis_after = mean(wis)) 
-scores_texas_after
+scores_texas_after_nov13
 
-scores_texas_dec25 <- scores_texas_before %>% left_join(scores_texas_after, by = "model")
+scores_texas_nov13 <- scores_texas_before_nov13 %>% left_join(scores_texas_after_nov13, by = "model")
 
-rel_wis_texas <- scores_texas_dec25 %>% group_by(model) %>% summarise(rel_wis = wis_after/wis_before)
-rel_wis_texas
+rel_wis_texas_nov13 <- scores_texas_nov13 %>% group_by(model) %>% mutate(rel_wis_texas_nov13 = wis_after/wis_before)
+rel_wis_texas_nov13 <- rel_wis_texas_nov13 %>% select(model, rel_wis_texas_nov13)
+rel_wis_texas_nov13
+
+truth_plot_texas_nov13 <- truth_data %>% filter(location == "48") %>% ggplot(aes(x = target_end_date, 
+             y = value, 
+             color = location_name)) + geom_vline(xintercept = as.Date("2020-11-13")) +
+  geom_line() +
+  theme_linedraw() +
+  labs(title = "Incident Cases Truth Data", subtitle = "Texas, before and after November 13", x = "Date", y = "Incident Cases", color = "Location")
+truth_plot_texas_nov13
+
+wis_plot_texas_nov13 <- rel_wis_texas_nov13 %>% ggplot(aes(x=model, y = rel_wis_texas_nov13, fill = model)) + geom_col() + theme_linedraw() + labs(title = "WIS by Model", subtitle = "Texas, before and after November 13", x = "Model Name", y = "WIS") + theme(legend.title = element_blank()) + theme(axis.text.x = element_text(angle = 90))
+wis_plot_texas_nov13
+
+```
+
+```{r}
+scores_texas_before_jan11 <- scored_forecasts  %>% filter(target_end_date <= "2021-01-11" & location == "48") %>% 
+  dplyr::group_by(model, location) %>% 
+  dplyr::summarise(wis_before = mean(wis)) 
+scores_texas_before_jan11
+
+scores_texas_after_jan11 <- scored_forecasts  %>% filter(target_end_date > "2021-01-11" & location == "48") %>% 
+  dplyr::group_by(model, location) %>% 
+  dplyr::summarise(wis_after = mean(wis)) 
+scores_texas_after_jan11
+
+scores_texas_jan11 <- scores_texas_before_jan11 %>% left_join(scores_texas_after_jan11, by = "model")
+
+rel_wis_texas_jan11 <- scores_texas_jan11 %>% group_by(model) %>% mutate(rel_wis_texas_jan11 = wis_after/wis_before)
+rel_wis_texas_jan11 <- rel_wis_texas_jan11 %>% select(model, rel_wis_texas_jan11)
+rel_wis_texas_jan11
+
+truth_plot_texas_jan11 <- truth_data %>% filter(location == "48") %>% ggplot(aes(x = target_end_date, 
+             y = value, 
+             color = location_name)) + geom_vline(xintercept = as.Date("2021-01-11")) +
+  geom_line() +
+  theme_linedraw() +
+  labs(title = "Incident Cases Truth Data", subtitle = "Texas, before and after January 11", x = "Date", y = "Incident Cases", color = "Location")
+truth_plot_texas_jan11
+
+
+wis_plot_texas_jan11 <- rel_wis_texas_jan11 %>% ggplot(aes(x=model, y = rel_wis_texas_jan11, fill = model)) + geom_col() + theme_linedraw() + labs(title = "WIS by Model", subtitle = "Texas, before and after January 11", x = "Model Name", y = "WIS") + theme(legend.title = element_blank()) + theme(axis.text.x = element_text(angle = 90))
+wis_plot_texas_jan11
+
+```
+
+## Combining all the relative WIS for each state and date: 
+```{r}
+#cali_merge <- rel_wis_cali_nov19 %>% left_join(rel_wis_cali_dec3, by = "model")
+#cali_merge
+
+library(plyr)
+all_relative_WIS <- join_all(list(rel_wis_cali_nov19, rel_wis_cali_dec3, rel_wis_florida_dec17, rel_wis_mass_nov2, rel_wis_mass_dec8, rel_wis_mich_nov3, rel_wis_mich_dec7, rel_wis_ny_dec14, rel_wis_ny_dec23, rel_wis_texas_nov13, rel_wis_texas_jan11), by='model', type='full')
+all_relative_WIS_new <- as.data.frame(t(all_relative_WIS[,-1]))
+colnames(all_relative_WIS_new) <- c("COVIDhub-baseline", "CU-select", "IowaStateLW-STEM", "JHU_IDD-CovidSP", "JHUAPL-Bucky", "LANL-GrowthRate", "UVA-Ensemble")
+DT::datatable(all_relative_WIS_new)
+
+#merge <- merge(rel_wis_cali_nov19, rel_wis_cali_dec3, rel_wis_florida_dec17, rel_wis_mass_nov2, rel_wis_mass_dec8, rel_wis_mich_nov3, rel_wis_mich_dec7, rel_wis_ny_dec14, rel_wis_ny_dec23, rel_wis_texas_nov13, rel_wis_texas_jan11, by = "model")
+```
+
+
+
+## Combining all the before WIS scores
+```{r}
+all_before_WIS <- rbind(scores_california_before_dec3, scores_california_before_nov19, scores_florida_before_dec17, scores_mass_before_nov2, scores_mass_before_dec8, scores_michigan_before_dec7, scores_michigan_before_nov3, scores_newyork_before_dec14, scores_newyork_before_dec23, scores_texas_before_nov13, scores_texas_before_jan11)
+all_before_WIS <- as.data.frame(all_before_WIS)
+all_before_WIS
+
+
+all_before_WIS %>% 
+  dplyr::group_by(model, location) %>%
+  dplyr::summarise(wis_before = mean(wis_before)) %>%
+  scoringutils::score_heatmap(metric = "wis_before", x = "location") + labs(title = "Average WIS Before Specified Date", subtitle = "by Model and Location", y = "Model", x = "Location", fill = "WIS Before")
+
+```
+
+
+
+## Combining all the after WIS scores
+```{r}
+all_after_WIS <- rbind(scores_california_after_dec3, scores_california_after_nov19, scores_florida_after_dec17, scores_mass_after_nov2, scores_mass_after_dec8, scores_michigan_after_dec7, scores_michigan_after_nov3, scores_newyork_after_dec14, scores_newyork_after_dec23, scores_texas_after_nov13, scores_texas_after_jan11)
+all_after_WIS <- as.data.frame(all_after_WIS)
+all_after_WIS
+
+all_after_WIS %>% 
+  dplyr::group_by(model, location) %>%
+  dplyr::summarise(wis_after = mean(wis_after)) %>%
+  scoringutils::score_heatmap(metric = "wis_after", x = "location") + labs(title = "Average WIS After Specified Date", subtitle = "by Model and Location", y = "Model", x = "Location", fill = "WIS After")
+```
+
+## Heatmap Relative WIS by State and Model
+```{r}
+
 ```
 

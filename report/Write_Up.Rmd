@@ -35,7 +35,7 @@ TODO:
 * Horizons:
 * Models: 
   * 2 models with both mobility and social distancing
-    * CU-select, OliverWyman-Navigator, JHUAPL-Bucky
+    * CU-select, JHUAPL-Bucky
   * 2 models with neither mobility nor social distancing
     * COVIDhub-baseline, LANL-GrowthRate
   * 2 models with only mobility 
@@ -63,6 +63,7 @@ Three of the locations that were chosen either never had a mask mandate or remov
 * April 1 2020: stay at home orders
 * May 4 2020: reopening begings
 * July 11 2020: Disney reopens
+* November and December 2020: Multiple counties continued to extended their state of emergencies
 * December 17 2020: reported 13148 new cases (largest since July 2020)
 * (Never had a mask mandate)
 
@@ -140,6 +141,7 @@ Three of the locations that were chosen either never had a mask mandate or remov
 * May 22 2020: extend stay at home orders until June 12 and state of emergency until June 19
 * October 5 2020: mask mandate put in place
 * October 9 2020: public places reopen
+* November 2020: rapid increase in cases
 * December 7 2020: statewide partial shutdown 
 * December 18 2020: some indoor spaces reopen 
 * March 5 2021: loosen restrictions 
@@ -154,7 +156,6 @@ Three of the locations that were chosen either never had a mask mandate or remov
 Model | Case Data | Model Type | Social Distancing Assumptions? | Mobility Data? | Notes
 ------------- | ------------- | ------------- | ------------- | ------------- | -------------
 CU-select | Johns Hopkins, USAFacts | SEIR model | yes | yes | NPI Scenarios
-OliverWyman-Navigator | JHU CSSE | Compartmental models | yes | yes (Apple, Google) | have models with social distancing, mobility, what if scenarios 
 JHUAPL-Bucky | JHU CSSE, CDC | Spatial compartment model | yes | yes | accounts for NPIs
 COVIDhub-baseline | JHU CSSE | Median prediction at all future horizons | no | no | 
 LANL-GrowthRate | JHU CSSE | Statistical dynamical growth model | no | no |
@@ -164,8 +165,49 @@ JHU_IDD-CovidSP | Johns Hopkins | State-level metapopulation model with commutin
 
 **Results**
 
+Relative WIS: Location & Date | CU-select | JHUAPL-Bucky | COVIDhub-baseline | LANL-GrowthRate | IowaStateLW-Stem | UVA-Ensemble | JHU_IDD-CovidSP 
+-------------- | -------------- | -------------- | -------------- | -------------- | -------------- | -------------- | -------------- | -------------- 
+California, December 25 2020 | 1.206475 | 1.522587	 | 1.164057	| 1.488985 | 1.113371 | 	1.628289	|	1.069115	
+California, December 3 2020 | 5.370204 | 1.808852	| 6.449432 | 2.792104	|	4.390412	|	3.733466	|	4.152183	
+Florida, December 25 2020 | 0.6055555 | 0.2638828 | 0.4991921 | 0.9095747 | 0.4722359 | 1.3920509 | 0.6998647 
+Florida, November 26-December 25 2020 | 0.7842814	| 0.2292115	| 0.6720338 | 0.4723293 | 0.5732159 | 1.6918945 | 0.7714050	
+Massachusetts, December 25 2020 | 1.3995285	|	1.0997744	|	0.4726977	|	1.4435453	|	0.7757552	|	1.1065041	|	0.8408508	
+Massachusetts, November 2 2020 | 3.979697	|	2.661800 | 4.719158 | 2.044704 |	2.500814 | NA | 3.030182	
+Massachusetts, December 8 2020 | 2.582925	| 1.141068 | 1.590219 |	1.459193 | 1.453894 | 1.378589 | 1.588102		
+Michigan, December 25 2020 | 1.2861948 | 0.5557569 | 1.4603111 | 0.5654227 | 1.5507782 | 0.7877323 | 0.8708405	
+Michigan, November 8 2020 | 1.680514 | 1.540251 | 1.631705 | 1.134571 | 1.864215 | NA | 1.664119	
+New York, December 25 2020 | 0.6282631 | 1.3932701 | 0.5790893 | 0.7732911 | 0.5692396 | 1.0451479 | 1.1616783	
+New York, November 12 2020 | 5.958968 | 4.937624 | 5.834913 | 2.874151 | 3.025552 | NA | 3.605014	
+Texas, December 25 2020 |	1.9554059	|	1.7943020	|	0.4314701	|	0.9648386	|	0.8648496	|	1.4402983	|	0.3218461	
+Texas, November 26-December 25 2020 |	2.1685951	|	2.1040233	|	0.4558419	|	0.4036692	|	0.7097249| 2.3080121 | 0.2761288	
+Texas, November 21-November 25 2020 |	1.3140754	|	1.5145767	|	0.8605251 |	0.3951242	|	0.6952534	|	1.8039064	|	0.5469355	
+
 *Summary of Models*
 *Model Accuracy*
 *Model Accuracy by Group*
 
 **Discussion**
+
+
+
+
+#mob: 
+#UMich-RidgeTfReg 
+
+**Model Chart 2**
+\newpage
+
+Model | Case Data | Model Type | Social Distancing Assumptions? | Mobility Data? | Notes
+------------- | ------------- | ------------- | ------------- | ------------- | -------------
+COVIDhub-baseline | JHU CSSE | Median prediction at all future horizons | no | no | 
+LANL-GrowthRate | JHU CSSE | Statistical dynamical growth model | no | no |
+COVIDhub-ensemble | | Unweighted average or median of submitted forecasts | no | no
+RobertWalraven-ESG | JHU CSSE | SEIR model | no | no
+IowaStateLW-STEM | NYT, Johns Hopkins, Covid Tracking Project, USA Facts | Nonparametric space-time disease transmission model | no | yes | 
+UVA-Ensemble | CDC | AR, ISTM, SEIR model | no | yes (Baidu) | 
+JHU_CSSE-DECOM | JHU CSSE | Empirical machine learning model | no | yes (SafeGraph) | 
+UMich-RidgeTfReg | JHU CSSE | Ridge regression | no | yes
+
+
+
+

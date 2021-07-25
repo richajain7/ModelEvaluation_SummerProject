@@ -15,26 +15,26 @@ library(DT)
 
 ## Option 2: looking at the nov-dec time period from nov1 to dec31
 ```{r}
-timezeros_novjan <- seq(from = as.Date("2020-11-01") , to = as.Date("2021-2-01"), by="days") 
+#error=FALSE, warning=FALSE, include=FALSE
+timezeros <- seq(from = as.Date("2020-09-01") , to = as.Date("2021-03-01"), by="days") 
 
-truth_data_novjan <- load_truth(truth_source = "JHU", 
+truth_data <- load_truth(truth_source = "JHU", 
                          target_variable = "inc case",
-                         truth_end_date = "2020-12-31", 
+                         truth_end_date = "2021-03-01", 
                          locations = c("12", "48", "25", "36", "06", "26"))
 
-forecasts_data_novjan <- load_forecasts(models = c("COVIDhub-baseline", "CU-select", 
-                                            "OliverWyman-Navigator", "LANL-GrowthRate",
+forecasts_data<- load_forecasts(models = c("COVIDhub-baseline", "CU-select", "LANL-GrowthRate",
                                             "IowaStateLW-STEM", "JHU_IDD-CovidSP", "UVA-Ensemble", "JHUAPL-Bucky"), 
-                                 forecast_dates = timezeros_novdec,
+                                 forecast_dates = timezeros,
                                  locations = c("12", "48", "25", "36", "06", "26"), 
                                  targets = paste(1:4, "wk ahead inc case"), 
                                  hub = "US")
 
-scored_forecasts_novjan <- score_forecasts(forecasts = forecasts_data_novdec, 
-                                    truth=truth_data_novdec, 
+scored_forecasts <- score_forecasts(forecasts = forecasts_data, 
+                                    truth=truth_data, 
                                     return_format = "wide")
 
-forecasts_data_unique_novjan <-  forecasts_data_novjan %>%
+forecasts_data_unique <-  forecasts_data %>%
   mutate(sat_fcast_week = as.Date(calc_target_week_end_date(forecast_date, horizon = 0))) %>%
   group_by(model, location, sat_fcast_week, horizon, quantile) %>%
   mutate(forecast_in_wk = row_number(), 
@@ -47,7 +47,7 @@ forecasts_data_unique_novjan <-  forecasts_data_novjan %>%
 ```
 #Fig 1:  Case truth data (no forecasts)
 ```{r}
-p <- plot_forecasts(forecast_data = forecasts_data_unique_novjan, 
+p <- plot_forecasts(forecast_data = forecasts_data_unique, 
                     truth_source = "JHU",
                     target_variable = "inc case",  
                     intervals = c(.5, .8, .95),
@@ -66,95 +66,90 @@ dates_tibble <- tibble(
   date = as.Date(c('2020-12-03','2020-12-17',"2020-12-08","2020-12-07","2020-12-11","2020-11-25"))
 )
 
-truth_plot <- truth_data_novjan %>% ggplot(aes(x = target_end_date, 
+truth_plot <- truth_data  %>% ggplot(aes(x = target_end_date, 
              y = value, 
              color = location_name)) + 
   geom_line() +
-  facet_wrap(.~location_name) + 
+  facet_wrap(.~location_name, scales = "free_y") +
   theme_linedraw() 
 
 
-truth_plot+ 
-  geom_vline(aes(xintercept = date), dates_tibble) + labs(title = "Incident Cases Truth Data", x = "Date", y = "Incident Cases", color = "Location")
+truth_plot+  labs(title = "Incident Cases Truth Data", x = "Date", y = "Incident Cases", color = "Location") + theme(axis.text.x = element_text(angle = 90)) + theme(legend.position = "none")
+
+# geom_vline(aes(xintercept = date), dates_tibble) +
 ```
 
 #Fig 2: line graph of WIS score over time  (by model)
 ## Note: need to figure out how to group by color
 ```{r}
-scores_novjan <- scored_forecasts_novjan %>%
+scores  <- scored_forecasts  %>%
   dplyr::group_by(model, target_end_date) %>% 
   dplyr::summarise(wis = mean(wis)) 
-scores_novjan %>% 
+scores  %>% 
   ggplot(aes(x = target_end_date, y = wis, color = model)) + geom_line() + labs(title = "WIS Score by Model", x = "Date", y = "WIS Score", color = "Model")
 ```
 
 ##Fig3a: Grouped by the model group
 ```{r}
-scored_forecasts_novjan$type <- "Neither"
-scored_forecasts_novjan$type[scored_forecasts_novjan$model == "CU-select" | scored_forecasts_novjan$model == "OliverWyman-Navigator" | scored_forecasts_novjan$model == "JHUAPL-Bucky"] <- "Mobility and Social Distancing/NPIs"
-scored_forecasts_novjan$type[scored_forecasts_novjan$model == "IowaStateLW-STEM" | scored_forecasts_novjan$model == "UVA-Ensemble"] <- "Only Mobility"
-scored_forecasts_novjan$type[scored_forecasts_novjan$model == "JHU_IDD-CovidSP"] <- "Only Social Distancing/NPIs"
+scored_forecasts$type <- "Neither"
+scored_forecasts$type[scored_forecasts$model == "CU-select" | scored_forecasts$model == "OliverWyman-Navigator" | scored_forecasts$model == "JHUAPL-Bucky"] <- "Mobility and Social Distancing/NPIs"
+scored_forecasts$type[scored_forecasts$model == "IowaStateLW-STEM" | scored_forecasts$model == "UVA-Ensemble"] <- "Only Mobility"
+scored_forecasts$type[scored_forecasts$model == "JHU_IDD-CovidSP"] <- "Only Social Distancing/NPIs"
 
-#scored_forecasts_novdec %>% select(model, type)
-
-scores_novjan_type <- scored_forecasts_novjan %>%
-  dplyr::group_by(model, type, target_end_date) %>% 
+scores_type <- scored_forecasts %>%
+  dplyr::group_by(model, type, target_end_date, location) %>% 
   dplyr::summarise(wis = mean(wis)) 
-scores_novjan_type%>% 
-  ggplot(aes(x = target_end_date, y = wis, color = type)) + geom_point() + labs(title = "WIS Score by Type of Model", x = "Date", y = "WIS Score", color = "Model Type")
+scores_type%>% 
+  ggplot(aes(x = target_end_date, y = wis, color = type)) + geom_line(aes(linetype = model)) + labs(title = "WIS Score by Type of Model", x = "Date", y = "WIS Score", color = "Model Type", linetype = "Model Name") + facet_wrap(.~location, scales = "free_y") + theme(axis.text.x = element_text(angle = 90)) 
+
 
 #group and facet by horizon
-scores_novjan_horizon <- scored_forecasts_novjan %>%
+scores_horizon <- scored_forecasts %>%
   dplyr::group_by(model, type, horizon) %>% 
   dplyr::summarise(wis = mean(wis)) 
-scores_novjan_horizon %>% 
-  ggplot(aes(x = horizon, y = wis, color = type)) + geom_point() + facet_wrap(.~horizon) + labs(title = "WIS Score by Type of Model and Horizon", x = "Horizon", y = "WIS Score", color = "Model Type")
+scores_horizon %>% 
+  ggplot(aes(x = horizon, y = wis, color = type)) + geom_point() + facet_wrap(.~horizon) + labs(title = "WIS Score by Type of Model and Horizon", x = "Horizon", y = "WIS Score", color = "Model Type", linetype = "Model Name")
 ```
 
 ##Fig3: Line graph faceted by location 
 ```{r}
-scores_novjan_location <- scored_forecasts_novjan %>%
+scores_location <- scored_forecasts %>%
   dplyr::group_by(location, model, target_end_date) %>% 
   dplyr::summarise(wis = mean(wis)) 
 
-dates_tibble_nums <- tibble(
-  location = c("06", "12", "25", "26", "36", "48"),
-  date = as.Date(c('2020-12-03','2020-12-17',"2020-12-08","2020-12-07","2020-12-11","2020-11-25"))
-)
 
-score_plots <- scores_novjan_location %>% 
-  ggplot(aes(x = target_end_date, y = wis, color = model)) + geom_line() + facet_wrap(.~location) + theme_linedraw()
-
-score_plots + 
-  geom_vline(aes(xintercept = date), dates_tibble_nums) + labs(title = "WIS Scores by State and Model", x = "Date", y = "WIS Score", color = "Model") 
+score_plots <- scores_location %>% 
+  ggplot(aes(x = target_end_date, y = wis, color = model)) + geom_line() + facet_wrap(.~location, scale = "free_y") + theme_linedraw()
+#free y in facet
+score_plots + labs(title = "WIS Scores by State and Model", x = "Date", y = "WIS Score", color = "Model") + theme(axis.text.x = element_text(angle = 90))
 ```
 
 ##Table1: Number of observations for each model
 ```{r}
-num_obs <- forecasts_data_unique_novjan %>% count(model)
+num_obs <- forecasts_data_unique %>% count(model)
 DT::datatable(num_obs)
 ```
 
 
 ##Table2: Average WIS scores across models 
 ```{r}
-avg_wis <- scored_forecasts_novjan %>% group_by(model) %>% summarise(avg = mean(wis))
+avg_wis <- scored_forecasts %>% group_by(model) %>% summarise(avg = mean(wis))
 DT::datatable(avg_wis)
 ```
 
 
 ##Table3: Average MAE over all models (abs_error)
 ```{r}
-avg_mae <- scored_forecasts_novjan %>% group_by(model) %>% summarise(avg = mean(abs_error))
+avg_mae <- scored_forecasts %>% group_by(model) %>% summarise(avg = mean(abs_error))
 DT::datatable(avg_mae)
 ```
 
 ## Heatmap
 ```{r}
-scored_forecasts_novjan %>%
-  dplyr::group_by(model, horizon) %>%
+scored_forecasts %>% filter(model != "OliverWyman-Navigator") %>% 
+  dplyr::group_by(model, location) %>%
   dplyr::summarise(wis = mean(wis)) %>%
-  scoringutils::score_heatmap(metric = "wis", x = "horizon")
+  scoringutils::score_heatmap(metric = "wis", x = "location")
 ```
 
 

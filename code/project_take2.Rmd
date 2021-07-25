@@ -1,0 +1,229 @@
+---
+title: "Project_Take2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(covidHubUtils)
+library(tidyverse)
+library(DT)
+```
+
+```{r}
+timezeros <- seq(from = as.Date("2020-09-01") , to = as.Date("2021-07-23"), by="days") 
+
+truth_data <- load_truth(truth_source = "JHU", 
+                         target_variable = "inc case",
+                         truth_end_date = "2021-03-01", 
+                         locations = c("12", "48", "25", "36", "06", "26"))
+
+#neither: 
+#lanl 
+#ensemble 
+#robert
+models_neither <- c("LANL-GrowthRate", "COVIDhub-ensemble", "RobertWalraven-ESG")
+
+#mob: 
+#iowastate
+#jhu decom (oct)
+#uva (11)
+models_mob <- c("IowaStateLW-STEM", "JHU_CSSE-DECOM", "UVA-Ensemble")
+
+forecasts_data_all <- load_forecasts(models = c("COVIDhub-baseline", "LANL-GrowthRate","IowaStateLW-STEM", "UVA-Ensemble", "JHU_CSSE-DECOM", "COVIDhub-ensemble", "RobertWalraven-ESG"), 
+                                 forecast_dates = timezeros,
+                                 locations = c("06"), 
+                                 targets = paste(1:4, "wk ahead inc case"), 
+                                 hub = "US")
+
+scored_forecasts <- score_forecasts(forecasts = forecasts_data, 
+                                    truth=truth_data, 
+                                    return_format = "wide")
+
+forecasts_data_unique <-  forecasts_data %>%
+  mutate(sat_fcast_week = as.Date(calc_target_week_end_date(forecast_date, horizon = 0))) %>%
+  group_by(model, location, sat_fcast_week, horizon, quantile) %>%
+  mutate(forecast_in_wk = row_number(), 
+         last_forecast_in_wk = forecast_in_wk == max(forecast_in_wk)) %>% 
+  filter(last_forecast_in_wk) %>%
+  ungroup()
+
+
+min_date <- forecasts_data_unique %>% group_by(model) %>% summarise(min_date = min(forecast_date))
+min_date
+
+max_date <- forecasts_data_unique %>% group_by(model) %>% summarise(max_date = max(forecast_date))
+max_date
+```
+
+# State & Date Chosen: California, December 5 2020 - December 19 2020 (U-Shaped Trend in Transit Mobility)
+# MAKE IT CLEAR THAT UVA IS MISSING 1 WEEK FOR BEFORE
+```{r}
+mondays_before <- scored_forecasts %>% filter(forecast_date <= "2020-12-05" & forecast_date > "2020-11-05" & location == "06")
+mondays_before
+
+mondays_after <- scored_forecasts %>% filter(forecast_date > "2020-12-19" & forecast_date < "2021-01-18" & location == "06") 
+mondays_after
+```
+
+## load_latest_forecasts
+#before:
+```{r}
+inc_case_targets <- paste(1, "wk ahead inc case")
+models_list <- c("COVIDhub-baseline", "LANL-GrowthRate","IowaStateLW-STEM", "UVA-Ensemble", "JHU_CSSE-DECOM", "COVIDhub-ensemble", "RobertWalraven-ESG")
+
+before <- mondays_before %>% distinct(forecast_date)
+before
+
+timezeros <- timezeros <- seq(from = as.Date("2020-11-05") , to = as.Date("2020-12-05"), by="days") 
+
+forecasts_data<- load_forecasts(models = models_list, 
+                                 forecast_dates = timezeros,
+                                 locations = c("06"), 
+                                 targets = paste(1, "wk ahead inc case"), 
+                                 hub = "US")
+
+p <- plot_forecasts(forecast_data = forecasts_data, 
+                    truth_source = "JHU",
+                    target_variable = "inc case",  
+                    intervals = c(.5, .8, .95),
+                    fill_by_model = TRUE,
+                    plot = FALSE) 
+p +
+  scale_x_date(name=NULL, date_breaks = "1 months", date_labels = "%b") +
+  theme(axis.ticks.length.x = unit(0.5, "cm"),
+    axis.text.x = element_text(vjust = 7, hjust = -0.2))
+#help("load_forecasts")
+```
+#after:
+```{r}
+timezeros_after <- timezeros <- seq(from = as.Date("2020-12-19") , to = as.Date("2021-01-18"), by="days") 
+
+forecasts_data_after <- load_forecasts(models = models_list, 
+                                 forecast_dates = timezeros_after,
+                                 locations = c("06"), 
+                                 targets = paste(1, "wk ahead inc case"), 
+                                 hub = "US")
+
+p_after <- plot_forecasts(forecast_data = forecasts_data_after, 
+                    truth_source = "JHU",
+                    target_variable = "inc case",  
+                    intervals = c(.5, .8, .95),
+                    fill_by_model = TRUE,
+                    plot = FALSE) 
+p_after +
+  scale_x_date(name=NULL, date_breaks = "2 months", date_labels = "%b") +
+  theme(axis.ticks.length.x = unit(0.5, "cm"),
+    axis.text.x = element_text(vjust = 7, hjust = -0.2))
+```
+
+
+## Avg WIS Before
+```{r}
+avg_WIS_before <- mondays_before %>% 
+  dplyr::group_by(model, location) %>% 
+  dplyr::summarise(wis_before = mean(wis)) 
+avg_WIS_before
+```
+
+
+
+## Avg WIS After
+```{r}
+avg_WIS_after <- mondays_after %>% 
+  dplyr::group_by(model, location) %>% 
+  dplyr::summarise(wis_after = mean(wis)) 
+avg_WIS_after
+```
+
+## Avg WIS before (Mob)
+```{r}
+avg_WIS_before_mob <- mondays_before %>% filter(model == models_mob) %>% 
+  dplyr::summarise(wis_before_mob = mean(wis)) 
+avg_WIS_before_mob
+```
+
+## Avg WIS after (Mob)
+```{r}
+avg_WIS_after_mob <- mondays_after %>% filter(model == models_mob) %>% 
+  dplyr::summarise(wis_after_mob = mean(wis)) 
+avg_WIS_after_mob
+```
+
+
+## Avg WIS before (Without Mob)
+```{r}
+avg_WIS_before_neither <- mondays_before %>% filter(model == models_neither) %>% 
+  dplyr::summarise(wis_before_neither = mean(wis)) 
+avg_WIS_before_neither
+```
+
+
+## Avg WIS after (Without Mob)
+```{r}
+avg_WIS_after_neither <- mondays_after %>% filter(model == models_neither) %>% 
+  dplyr::summarise(wis_after_neither = mean(wis)) 
+avg_WIS_after_neither
+```
+
+## Avg WIS baseline
+```{r}
+avg_wis_before_baseline <- mondays_before %>% filter(model == "COVIDhub-baseline") %>% summarise(wis_before_baseline = mean(wis)) 
+avg_wis_before_baseline
+
+avg_wis_after_baseline <- mondays_after %>% filter(model == "COVIDhub-baseline") %>% summarise(wis_after_baseline = mean(wis)) 
+avg_wis_after_baseline
+
+rel_wis_baseline <- avg_wis_after_baseline/avg_wis_before_baseline
+colnames(rel_wis_baseline) <- c("relwis_baseline")
+rel_wis_baseline
+```
+
+## relWIS_before
+```{r}
+relWIS_before <- avg_WIS_before_mob/avg_WIS_before_neither
+colnames(relWIS_before) <- c("relwis_mob_neither_before")
+relWIS_before
+```
+
+## relWIS_after
+```{r}
+relWIS_after <- avg_WIS_after_mob/avg_WIS_after_neither
+colnames(relWIS_after) <- c("relwis_mob_neither_after")
+relWIS_after
+```
+
+## California - what's going on 
+```{r}
+
+truth_plot_cali<- truth_data %>% filter(location == "06") %>% ggplot(aes(x = target_end_date, 
+             y = value, 
+             color = location_name)) + geom_vline(xintercept = as.Date(c("2020-12-05", "2020-12-19"))) +
+  geom_line() +
+  theme_linedraw() +
+  labs(title = "Incident Cases Truth Data", subtitle = "California, before and after December 5 - December 19", x = "Date", y = "Incident Cases", color = "Location")
+truth_plot_cali + theme(legend.position = "none")
+```
+
+## WIS by model and type
+```{r}
+scored_forecasts$type <- "Neither"
+scored_forecasts$type[scored_forecasts$model == "IowaStateLW-STEM" | scored_forecasts$model == "UVA-Ensemble" | scored_forecasts$model == "JHU_CSSE-DECOM"] <- "Only Mobility"
+scored_forecasts$type[scored_forecasts$model == "COVIDhub-baseline"] <- "Baseline"
+
+scores_type_before <- scored_forecasts %>% filter(forecast_date <= "2020-12-05" & forecast_date > "2020-11-05" & location == "06") %>% 
+  dplyr::group_by(model, forecast_date, type, location) %>% 
+  dplyr::summarise(wis = mean(wis)) 
+scores_type_before %>% 
+  ggplot(aes(x = forecast_date, y = wis, color = type)) + geom_line(aes(linetype = model)) + labs(title = "WIS Score by Type of Model", subtitle = "Before December 5", x = "Date", y = "WIS Score", color = "Model Type", linetype = "Model Name") + theme(axis.text.x = element_text(angle = 90)) 
+
+scores_type_after <- scored_forecasts %>% filter(forecast_date > "2020-12-19" & forecast_date < "2021-01-18" & location == "06") %>% 
+  dplyr::group_by(model, forecast_date, type, location) %>% 
+  dplyr::summarise(wis = mean(wis)) 
+scores_type_after %>% 
+  ggplot(aes(x = forecast_date, y = wis, color = type)) + geom_line(aes(linetype = model)) + labs(title = "WIS Score by Type of Model", subtitle = "After December 19", x = "Date", y = "WIS Score", color = "Model Type", linetype = "Model Name") + theme(axis.text.x = element_text(angle = 90)) 
+```
+

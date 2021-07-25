@@ -12,224 +12,141 @@ US_2020 <- read_csv("data/2020_US_Region_Mobility_Report.csv")
 US_2021 <- read_csv("data/2021_US_Region_Mobility_Report.csv")
 ```
 
+parks, transit, retail & recreation
+
 California: 
+
 ```{r}
-cali <- US_2020 %>% 
+cali_take2 <- US_2020 %>% 
   select(sub_region_1, 
          iso_3166_2_code, 
          date, 
          retail_and_recreation_percent_change_from_baseline, 
-         grocery_and_pharmacy_percent_change_from_baseline, 
-         parks_percent_change_from_baseline, 
-         transit_stations_percent_change_from_baseline, 
-         workplaces_percent_change_from_baseline, 
-         residential_percent_change_from_baseline) %>% 
-  filter(iso_3166_2_code == "US-CA")
+         transit_stations_percent_change_from_baseline) %>% 
+  filter(iso_3166_2_code == "US-CA", date > "2020-09-01")
 
-cali <- cali %>% group_by(date) %>% 
-  mutate(total_percent_change = 
-           sum(retail_and_recreation_percent_change_from_baseline, 
-               grocery_and_pharmacy_percent_change_from_baseline, 
-               parks_percent_change_from_baseline, 
-               transit_stations_percent_change_from_baseline, 
-               workplaces_percent_change_from_baseline, 
-               residential_percent_change_from_baseline))
+cali_take2
 
-cali %>% select(sub_region_1, iso_3166_2_code, date, total_percent_change)
+cali_take2 %>% ggplot(aes(x = date, y = transit_stations_percent_change_from_baseline)) + geom_line() + theme_linedraw()+ labs(title = "Transit Data California", subtitle = "September 1 2020 - December 31 2020", x = "Date", y = "Transit Percent Change from Baseline")
+cali_take2 %>% ggplot(aes(x = date, y = retail_and_recreation_percent_change_from_baseline)) + geom_line() + theme_linedraw()
 
-cali %>% ggplot(aes(x = date, y = total_percent_change)) + geom_line() + theme_linedraw()
-
-cali_2021 <- US_2021 %>% 
+cali_2021_take2 <- US_2021 %>% 
   select(sub_region_1, 
          iso_3166_2_code, 
          date, 
          retail_and_recreation_percent_change_from_baseline, 
-         grocery_and_pharmacy_percent_change_from_baseline, 
-         parks_percent_change_from_baseline, 
-         transit_stations_percent_change_from_baseline, 
-         workplaces_percent_change_from_baseline, 
-         residential_percent_change_from_baseline) %>% 
+         transit_stations_percent_change_from_baseline) %>% 
   filter(iso_3166_2_code == "US-CA")
 
-cali_2021 <- cali_2021 %>% group_by(date) %>% 
-  mutate(total_percent_change = 
-           sum(retail_and_recreation_percent_change_from_baseline, 
-               grocery_and_pharmacy_percent_change_from_baseline, 
-               parks_percent_change_from_baseline, 
-               transit_stations_percent_change_from_baseline, 
-               workplaces_percent_change_from_baseline, 
-               residential_percent_change_from_baseline))
+cali_2021_take2
 
-cali_2021 %>% select(sub_region_1, iso_3166_2_code, date, total_percent_change)
-
-cali_2021 %>% ggplot(aes(x = date, y = total_percent_change)) + geom_line() + theme_linedraw()
+cali_2021_take2 %>% ggplot(aes(x = date, y = transit_stations_percent_change_from_baseline)) + geom_line() + theme_linedraw() 
+cali_2021_take2 %>% ggplot(aes(x = date, y = retail_and_recreation_percent_change_from_baseline)) + geom_line() + theme_linedraw()
 ```
-
-find: serious decrease in mobility towards the end of 2020 (december 25)
+dec 5 - dec 19 (u shaped)
 
 Florida: 
+
+
 ```{r}
-florida <- US_2020 %>% 
+florida_take2 <- US_2020 %>% 
   select(sub_region_1, 
          iso_3166_2_code, 
          date, 
          retail_and_recreation_percent_change_from_baseline, 
-         grocery_and_pharmacy_percent_change_from_baseline, 
-         parks_percent_change_from_baseline, 
-         transit_stations_percent_change_from_baseline, 
-         workplaces_percent_change_from_baseline, 
-         residential_percent_change_from_baseline) %>% 
-  filter(iso_3166_2_code == "US-FL")
+         transit_stations_percent_change_from_baseline) %>% 
+  filter(iso_3166_2_code == "US-FL", date > "2020-10-01")
 
-florida <- florida %>% group_by(date) %>% 
-  mutate(total_percent_change = 
-           sum(retail_and_recreation_percent_change_from_baseline, 
-               grocery_and_pharmacy_percent_change_from_baseline, 
-               parks_percent_change_from_baseline, 
-               transit_stations_percent_change_from_baseline, 
-               workplaces_percent_change_from_baseline, 
-               residential_percent_change_from_baseline))
+florida_take2
 
-florida %>% select(sub_region_1, iso_3166_2_code, date, total_percent_change)
+florida_take2 %>% ggplot(aes(x = date, y = transit_stations_percent_change_from_baseline)) + geom_line() + theme_linedraw()
+florida_take2 %>% ggplot(aes(x = date, y = retail_and_recreation_percent_change_from_baseline)) + geom_line() + theme_linedraw()
 
-florida %>% ggplot(aes(x = date, y = total_percent_change)) + geom_line() + theme_linedraw()
-
-florida_2021 <- US_2021 %>% 
+florida_2021_take2 <- US_2021 %>% 
   select(sub_region_1, 
          iso_3166_2_code, 
          date, 
          retail_and_recreation_percent_change_from_baseline, 
-         grocery_and_pharmacy_percent_change_from_baseline, 
-         parks_percent_change_from_baseline, 
-         transit_stations_percent_change_from_baseline, 
-         workplaces_percent_change_from_baseline, 
-         residential_percent_change_from_baseline) %>% 
+         transit_stations_percent_change_from_baseline) %>% 
   filter(iso_3166_2_code == "US-FL")
 
-florida_2021 <- florida_2021 %>% group_by(date) %>% 
-  mutate(total_percent_change = 
-           sum(retail_and_recreation_percent_change_from_baseline, 
-               grocery_and_pharmacy_percent_change_from_baseline, 
-               parks_percent_change_from_baseline, 
-               transit_stations_percent_change_from_baseline, 
-               workplaces_percent_change_from_baseline, 
-               residential_percent_change_from_baseline))
+florida_2021_take2
 
-florida_2021 %>% select(sub_region_1, iso_3166_2_code, date, total_percent_change)
-
-florida_2021 %>% ggplot(aes(x = date, y = total_percent_change)) + geom_line() + theme_linedraw()
+florida_2021_take2 %>% ggplot(aes(x = date, y = transit_stations_percent_change_from_baseline)) + geom_line() + theme_linedraw()
+florida_2021_take2 %>% ggplot(aes(x = date, y = retail_and_recreation_percent_change_from_baseline)) + geom_line() + theme_linedraw()
 ```
-find: decrease in mobility in december 2020 (december 25)
+11/9 (hurricane)
+
 
 Massachusetts: 
+
+
 ```{r}
-ma <- US_2020 %>% 
+ma_take2 <- US_2020 %>% 
   select(sub_region_1, 
          iso_3166_2_code, 
          date, 
          retail_and_recreation_percent_change_from_baseline, 
-         grocery_and_pharmacy_percent_change_from_baseline, 
-         parks_percent_change_from_baseline, 
-         transit_stations_percent_change_from_baseline, 
-         workplaces_percent_change_from_baseline, 
-         residential_percent_change_from_baseline) %>% 
-  filter(iso_3166_2_code == "US-MA")
+         transit_stations_percent_change_from_baseline) %>% 
+  filter(iso_3166_2_code == "US-MA", date > "2020-10-30")
 
-ma <- ma %>% group_by(date) %>% 
-  mutate(total_percent_change = 
-           sum(retail_and_recreation_percent_change_from_baseline, 
-               grocery_and_pharmacy_percent_change_from_baseline, 
-               parks_percent_change_from_baseline, 
-               transit_stations_percent_change_from_baseline, 
-               workplaces_percent_change_from_baseline, 
-               residential_percent_change_from_baseline))
+ma_take2
 
-ma %>% select(sub_region_1, iso_3166_2_code, date, total_percent_change)
-
-ma %>% ggplot(aes(x = date, y = total_percent_change)) + geom_line() + theme_linedraw()
+ma_take2 %>% ggplot(aes(x = date, y = transit_stations_percent_change_from_baseline)) + geom_line() + theme_linedraw()
+ma_take2 %>% ggplot(aes(x = date, y = retail_and_recreation_percent_change_from_baseline)) + geom_line() + theme_linedraw()
 
 
-ma_2021 <- US_2021 %>% 
+ma_2021_take2 <- US_2021 %>% 
   select(sub_region_1, 
          iso_3166_2_code, 
          date, 
          retail_and_recreation_percent_change_from_baseline, 
-         grocery_and_pharmacy_percent_change_from_baseline, 
-         parks_percent_change_from_baseline, 
-         transit_stations_percent_change_from_baseline, 
-         workplaces_percent_change_from_baseline, 
-         residential_percent_change_from_baseline) %>% 
-  filter(iso_3166_2_code == "US-MA")
+         transit_stations_percent_change_from_baseline) %>% 
+  filter(iso_3166_2_code == "US-MA", date > "2021-04-01")
 
-ma_2021 <- ma_2021 %>% group_by(date) %>% 
-  mutate(total_percent_change = 
-           sum(retail_and_recreation_percent_change_from_baseline, 
-               grocery_and_pharmacy_percent_change_from_baseline, 
-               parks_percent_change_from_baseline, 
-               transit_stations_percent_change_from_baseline, 
-               workplaces_percent_change_from_baseline, 
-               residential_percent_change_from_baseline))
+ma_2021_take2
 
-ma_2021 %>% select(sub_region_1, iso_3166_2_code, date, total_percent_change)
-
-ma_2021 %>% ggplot(aes(x = date, y = total_percent_change)) + geom_line() + theme_linedraw()
+ma_2021_take2 %>% ggplot(aes(x = date, y = transit_stations_percent_change_from_baseline)) + geom_line() + theme_linedraw()
+ma_2021_take2 %>% ggplot(aes(x = date, y = retail_and_recreation_percent_change_from_baseline)) + geom_line() + theme_linedraw()
 
 ```
-find: increase in summer/fall and then decrease in winter (dec 25)
+Dec 18 (snow)
+Dec 5 (snow)
+april 4 (easter)
+may 31
 
 Michigan: 
 ```{r}
-michigan <- US_2020 %>% 
+michigan_take2 <- US_2020 %>% 
   select(sub_region_1, 
          iso_3166_2_code, 
          date, 
          retail_and_recreation_percent_change_from_baseline, 
-         grocery_and_pharmacy_percent_change_from_baseline, 
-         parks_percent_change_from_baseline, 
-         transit_stations_percent_change_from_baseline, 
-         workplaces_percent_change_from_baseline, 
-         residential_percent_change_from_baseline) %>% 
+         transit_stations_percent_change_from_baseline) %>% 
   filter(iso_3166_2_code == "US-MI")
 
-michigan <- michigan %>% group_by(date) %>% 
-  mutate(total_percent_change = 
-           sum(retail_and_recreation_percent_change_from_baseline, 
-               grocery_and_pharmacy_percent_change_from_baseline, 
-               parks_percent_change_from_baseline, 
-               transit_stations_percent_change_from_baseline, 
-               workplaces_percent_change_from_baseline, 
-               residential_percent_change_from_baseline))
+michigan_take2
 
-michigan %>% select(sub_region_1, iso_3166_2_code, date, total_percent_change)
+michigan_take2 %>% ggplot(aes(x = date, y = transit_stations_percent_change_from_baseline)) + geom_line() + theme_linedraw()
+michigan_take2 %>% ggplot(aes(x = date, y = retail_and_recreation_percent_change_from_baseline)) + geom_line() + theme_linedraw()
 
-michigan %>% ggplot(aes(x = date, y = total_percent_change)) + geom_line() + theme_linedraw()
-
-michigan_2021 <- US_2021 %>% 
+michigan_2021_take2 <- US_2021 %>% 
   select(sub_region_1, 
          iso_3166_2_code, 
          date, 
          retail_and_recreation_percent_change_from_baseline, 
-         grocery_and_pharmacy_percent_change_from_baseline, 
-         parks_percent_change_from_baseline, 
-         transit_stations_percent_change_from_baseline, 
-         workplaces_percent_change_from_baseline, 
-         residential_percent_change_from_baseline) %>% 
-  filter(iso_3166_2_code == "US-MI")
+         transit_stations_percent_change_from_baseline) %>% 
+  filter(iso_3166_2_code == "US-MI", date > "2021-02-01")
 
-michigan_2021 <- michigan_2021 %>% group_by(date) %>% 
-  mutate(total_percent_change = 
-           sum(retail_and_recreation_percent_change_from_baseline, 
-               grocery_and_pharmacy_percent_change_from_baseline, 
-               parks_percent_change_from_baseline, 
-               transit_stations_percent_change_from_baseline, 
-               workplaces_percent_change_from_baseline, 
-               residential_percent_change_from_baseline))
+michigan_2021_take2
 
-michigan_2021 %>% select(sub_region_1, iso_3166_2_code, date, total_percent_change)
-
-michigan_2021 %>% ggplot(aes(x = date, y = total_percent_change)) + geom_line() + theme_linedraw()
+michigan_2021_take2 %>% ggplot(aes(x = date, y = transit_stations_percent_change_from_baseline)) + geom_line() + theme_linedraw()
+michigan_2021_take2 %>% ggplot(aes(x = date, y = retail_and_recreation_percent_change_from_baseline)) + geom_line() + theme_linedraw()
 ```
-find: december 25 decrease
+feb 16 (snow)
+feb 5 (snow)
+march 17
+march 21
 
 New York: 
 ```{r}
@@ -238,52 +155,29 @@ ny <- US_2020 %>%
          iso_3166_2_code, 
          date, 
          retail_and_recreation_percent_change_from_baseline, 
-         grocery_and_pharmacy_percent_change_from_baseline, 
-         parks_percent_change_from_baseline, 
-         transit_stations_percent_change_from_baseline, 
-         workplaces_percent_change_from_baseline, 
-         residential_percent_change_from_baseline) %>% 
-  filter(iso_3166_2_code == "US-NY")
+         transit_stations_percent_change_from_baseline) %>% 
+  filter(iso_3166_2_code == "US-NY", date > "2020-10-01")
 
-ny <- ny %>% group_by(date) %>% 
-  mutate(total_percent_change = 
-           sum(retail_and_recreation_percent_change_from_baseline, 
-               grocery_and_pharmacy_percent_change_from_baseline, 
-               parks_percent_change_from_baseline, 
-               transit_stations_percent_change_from_baseline, 
-               workplaces_percent_change_from_baseline, 
-               residential_percent_change_from_baseline))
+ny 
 
-ny %>% select(sub_region_1, iso_3166_2_code, date, total_percent_change)
-
-ny %>% ggplot(aes(x = date, y = total_percent_change)) + geom_line() + theme_linedraw()
+ny %>% ggplot(aes(x = date, y = transit_stations_percent_change_from_baseline)) + geom_line() + theme_linedraw()
+ny %>% ggplot(aes(x = date, y = retail_and_recreation_percent_change_from_baseline)) + geom_line() + theme_linedraw()
 
 ny_2021 <- US_2021 %>% 
   select(sub_region_1, 
          iso_3166_2_code, 
          date, 
          retail_and_recreation_percent_change_from_baseline, 
-         grocery_and_pharmacy_percent_change_from_baseline, 
-         parks_percent_change_from_baseline, 
-         transit_stations_percent_change_from_baseline, 
-         workplaces_percent_change_from_baseline, 
-         residential_percent_change_from_baseline) %>% 
-  filter(iso_3166_2_code == "US-NY")
+         transit_stations_percent_change_from_baseline) %>% 
+  filter(iso_3166_2_code == "US-NY", date < "2021-03-01")
 
-ny_2021 <- ny_2021 %>% group_by(date) %>% 
-  mutate(total_percent_change = 
-           sum(retail_and_recreation_percent_change_from_baseline, 
-               grocery_and_pharmacy_percent_change_from_baseline, 
-               parks_percent_change_from_baseline, 
-               transit_stations_percent_change_from_baseline, 
-               workplaces_percent_change_from_baseline, 
-               residential_percent_change_from_baseline))
+ny_2021 
 
-ny_2021 %>% select(sub_region_1, iso_3166_2_code, date, total_percent_change)
-
-ny_2021 %>% ggplot(aes(x = date, y = total_percent_change)) + geom_line() + theme_linedraw()
+ny_2021 %>% ggplot(aes(x = date, y = transit_stations_percent_change_from_baseline)) + geom_line() + theme_linedraw()
+ny_2021 %>% ggplot(aes(x = date, y = retail_and_recreation_percent_change_from_baseline)) + geom_line() + theme_linedraw()
 ```
-find: december 25
+Feb 1 (winter storm)
+December 17 (snow)
 
 Texas:
 ```{r}
@@ -292,50 +186,25 @@ texas <- US_2020 %>%
          iso_3166_2_code, 
          date, 
          retail_and_recreation_percent_change_from_baseline, 
-         grocery_and_pharmacy_percent_change_from_baseline, 
-         parks_percent_change_from_baseline, 
-         transit_stations_percent_change_from_baseline, 
-         workplaces_percent_change_from_baseline, 
-         residential_percent_change_from_baseline) %>% 
-  filter(iso_3166_2_code == "US-TX")
+         transit_stations_percent_change_from_baseline) %>% 
+  filter(iso_3166_2_code == "US-TX", date > "2020-10-01")
 
-texas <- texas %>% group_by(date) %>% 
-  mutate(total_percent_change = 
-           sum(retail_and_recreation_percent_change_from_baseline, 
-               grocery_and_pharmacy_percent_change_from_baseline, 
-               parks_percent_change_from_baseline, 
-               transit_stations_percent_change_from_baseline, 
-               workplaces_percent_change_from_baseline, 
-               residential_percent_change_from_baseline))
+texas
 
-texas %>% select(sub_region_1, iso_3166_2_code, date, total_percent_change)
-
-texas %>% ggplot(aes(x = date, y = total_percent_change)) + geom_line() + theme_linedraw()
+texas %>% ggplot(aes(x = date, y = transit_stations_percent_change_from_baseline)) + geom_line() + theme_linedraw()
+texas %>% ggplot(aes(x = date, y = retail_and_recreation_percent_change_from_baseline)) + geom_line() + theme_linedraw()
 
 texas_2021 <- US_2021 %>% 
   select(sub_region_1, 
          iso_3166_2_code, 
          date, 
          retail_and_recreation_percent_change_from_baseline, 
-         grocery_and_pharmacy_percent_change_from_baseline, 
-         parks_percent_change_from_baseline, 
-         transit_stations_percent_change_from_baseline, 
-         workplaces_percent_change_from_baseline, 
-         residential_percent_change_from_baseline) %>% 
-  filter(iso_3166_2_code == "US-TX")
+         transit_stations_percent_change_from_baseline) %>% 
+  filter(iso_3166_2_code == "US-TX", date < "2021-03-01")
 
-texas_2021 <- texas_2021 %>% group_by(date) %>% 
-  mutate(total_percent_change = 
-           sum(retail_and_recreation_percent_change_from_baseline, 
-               grocery_and_pharmacy_percent_change_from_baseline, 
-               parks_percent_change_from_baseline, 
-               transit_stations_percent_change_from_baseline, 
-               workplaces_percent_change_from_baseline, 
-               residential_percent_change_from_baseline))
+texas_2021
 
-texas_2021 %>% select(sub_region_1, iso_3166_2_code, date, total_percent_change)
-
-texas_2021 %>% ggplot(aes(x = date, y = total_percent_change)) + geom_line() + theme_linedraw()
+texas_2021 %>% ggplot(aes(x = date, y = transit_stations_percent_change_from_baseline)) + geom_line() + theme_linedraw()
+texas_2021 %>% ggplot(aes(x = date, y = retail_and_recreation_percent_change_from_baseline)) + geom_line() + theme_linedraw()
 ```
-find: december 25
-decrease in feb a result of texas deep freeze?
+feb 15 (winter storm)
