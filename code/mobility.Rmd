@@ -161,7 +161,7 @@ ny <- US_2020 %>%
 ny 
 
 ny %>% ggplot(aes(x = date, y = transit_stations_percent_change_from_baseline)) + geom_line() + theme_linedraw()
-ny %>% ggplot(aes(x = date, y = retail_and_recreation_percent_change_from_baseline)) + geom_line() + theme_linedraw()
+ny %>% ggplot(aes(x = date, y = retail_and_recreation_percent_change_from_baseline)) + geom_line() + theme_linedraw()+ labs(title = "Transit Data New York", subtitle = "September 1 2020 - December 31 2020", x = "Date", y = "Transit Percent Change from Baseline")
 
 ny_2021 <- US_2021 %>% 
   select(sub_region_1, 

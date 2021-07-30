@@ -6,17 +6,56 @@ author: Richa Jain and Estee Cramer
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(covidHubUtils)
+library(readr)
+library(dplyr)
+library(tidyverse)
+```
+```{r, include=FALSE}
+timezeros <- seq(from = as.Date("2020-09-01") , to = as.Date("2021-07-23"), by="days") 
+
+truth_data <- load_truth(truth_source = "JHU", 
+                         target_variable = "inc case",
+                         truth_end_date = "2021-03-01", 
+                         locations = c("12", "48", "25", "36", "06", "26"))
+
+#neither: 
+#lanl 
+#ensemble 
+#robert
+models_neither <- c("LANL-GrowthRate", "COVIDhub-ensemble", "RobertWalraven-ESG")
+
+#mob: 
+#iowastate
+#jhu decom (oct)
+#uva (11)
+models_mob <- c("IowaStateLW-STEM", "JHU_CSSE-DECOM", "UVA-Ensemble")
+
+forecasts_data_all <- load_forecasts(models = c("COVIDhub-baseline", "LANL-GrowthRate","IowaStateLW-STEM", "UVA-Ensemble", "JHU_CSSE-DECOM", "COVIDhub-ensemble", "RobertWalraven-ESG"), 
+                                 forecast_dates = timezeros,
+                                 locations = c("06", "36"), 
+                                 targets = paste(1:4, "wk ahead inc case"), 
+                                 hub = "US")
+
+scored_forecasts <- score_forecasts(forecasts = forecasts_data_all, 
+                                    truth=truth_data, 
+                                    return_format = "wide")
+
+forecasts_data_unique <-  forecasts_data_all %>%
+  mutate(sat_fcast_week = as.Date(calc_target_week_end_date(forecast_date, horizon = 0))) %>%
+  group_by(model, location, sat_fcast_week, horizon, quantile) %>%
+  mutate(forecast_in_wk = row_number(), 
+         last_forecast_in_wk = forecast_in_wk == max(forecast_in_wk)) %>% 
+  filter(last_forecast_in_wk) %>%
+  ungroup()
 ```
 
 
 **Introduction**
 
-Many of the models submitting to the COVID-19 Forecast Hub incorporate data about social distancing, mobility, or non-pharmaceutical interventions (NPIs). We look to compare these models with each other and with models that do not incorporate such data and evaluate their performance.
+Many of the models submitting to the COVID-19 Forecast Hub incorporate data about mobility. We look to compare these models with with models that do not incorporate such data to evaluate and compare their performances.
 
-TODO: 
-1. define social distancing , NPIs , mobility 
-2. 
-
+Mobility data may include different trends in a variety of areas including grocery shopping, parks, transit, retail, recreation, and workplaces. Mobility data tells us how much the population of a certain area is moving around and how visits to certain places are changing over time. 
 
 **Methods** 
 
@@ -24,80 +63,200 @@ TODO:
 
 * Look for which models use social distancing data 
 * Data used by models (demographic data, hospitalization data) 
-* Model type (SEIR, Baysian, statistical) 
-* Look for models that fit criteria but do not include social distancing data 
+* Model type (SEIR, Baysian, Statistical, etc.) 
 
 *Step 2: Inclusion Criteria*
 
-* Locations: Florida, Texas, Massachusetts, New York, California, Michigan
-* Time period: November 1 2020 - December 31 2020
+* Locations: California (06), New York (36)
+* Time period: December 5 2020 - December 19 2020 (California) & December 17 2020 (NY)
 * Target: Incident Cases 
-* Horizons:
+* Horizons: 1 week ahead 
 * Models: 
-  * 2 models with both mobility and social distancing
-    * CU-select, JHUAPL-Bucky
-  * 2 models with neither mobility nor social distancing
-    * COVIDhub-baseline, LANL-GrowthRate
+  * 2 models without mobility
+    * LANL-GrowthRate, COVIDhub-ensemble, RobertWalraven-ESG
   * 2 models with only mobility 
-    * IowaStateLW-STEM, UVA-Ensemble
-  * 1 model with only social distancing
-    * JHU_IDD-CovidSP
+    * IowaStateLW-STEM, JHU_CSSE-DECOM, UVA-Ensemble
+  * Baseline
+    * COVIDhub-baseline
+* Relative WIS = average_WIS_mobility/average_WIS_non-mobility 
+* Relative WIS (baseline) = average_WIS_after/average_WIS_before
+
+\newpage  
+*Model Characteristics*
+
+Model | Case Data | Model Type | Social Distancing Assumptions? | Mobility Data? | Notes
+------------- | ------------- | ------------- | ------------- | ------------- | -------------
+COVIDhub-baseline | JHU CSSE | Median prediction at all future horizons | no | no | 
+LANL-GrowthRate | JHU CSSE | Statistical dynamical growth model | no | no |
+COVIDhub-ensemble | | Unweighted average or median of submitted forecasts | no | no
+RobertWalraven-ESG | JHU CSSE | SEIR model | no | no
+IowaStateLW-STEM | NYT, Johns Hopkins, Covid Tracking Project, USA Facts | Nonparametric space-time disease transmission model | no | yes | 
+UVA-Ensemble | CDC | AR, ISTM, SEIR model | no | yes (Baidu) | 
+JHU_CSSE-DECOM | JHU CSSE | Empirical machine learning model | no | yes (SafeGraph) | 
+UMich-RidgeTfReg | JHU CSSE | Ridge regression | no | yes
+
+These models were selected by first determining that we wanted to focus on case forecasts and finding the models that have submitted case forecasts. Then I separated models with and without mobility data. Finally, once a time period was determined, I went through the models and selected those which were submitting case forecasts during that time. 
 
 *Step 3: Evaluation graphs* 
 
 * After deciding on inclusion criteria, use covidhubUtils to score forecasts and determine which models are best. 
 
-*Step 4: Linear regression*
+\newpage
+**California** 
 
-* Exposure / variable : social distancing, data sources, model type
+*How did COVID-19 play out in California?*
 
-**Key Information about the Locations** 
+* March 4 2020: state of emergency declared
+* March 12 2020: cancel large events
+* March 19 2020: stay at home orders
+* May 8 2020: beginning of phase 2 reopening 
+* May 26 2020: phase 3 reopening 
+* June 18 2020: mask mandate put in place
+* July 13 2020: 30 counties ordered to close indoor businesses
+* July 22 2020: CA surpasses NY for confirmed cases
+* October 10 2020: loosen restrictions on private outdoor gatherings
+* November 19 2020: statewide curfew
+* December 3 2020: new stay at home oder
+* January 25 2021: no counties have stay at home order
 
-(maybe change timelines to just 1 key date from summer 2020, winter 2020, and now)
+*Time Period Selection*
 
-Three of the locations that were chosen either never had a mask mandate or removed the mask mandate early in 2021 (FL, TX, MA) while the other three locations plan to remove mask mandates sometime in the summer of 2021 (NY, CA, MI). 
+I decided to focus on the dates one month before and one month after December 5 2020 - December 19 2020. It is important to note that UVA-ensemble was only submitting forecasts starting three weeks prior to December 5 2020, but I think this will still give us a good idea of what was going on with mobility and non-mobility models. 
 
-*Florida Timeline*
+From December 5 - December 19 2020, the transit mobility percent change in New York was having a slight fluctuation so it seemed like an interesting time period to see whether mobility models were able to use that to their advantage. 
 
-* March 9 2020: state of emergency
-* April 1 2020: stay at home orders
-* May 4 2020: reopening begings
-* July 11 2020: Disney reopens
-* November and December 2020: Multiple counties continued to extended their state of emergencies
-* December 17 2020: reported 13148 new cases (largest since July 2020)
-* (Never had a mask mandate)
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+US_2020 <- read_csv("/Users/richajain/Reich Lab/Summer Project Git/ModelEvaluation_SummerProject/code/data/2020_US_Region_Mobility_Report.csv")
+US_2021 <- read_csv("/Users/richajain/Reich Lab/Summer Project Git/ModelEvaluation_SummerProject/code/data/2021_US_Region_Mobility_Report.csv")
 
-*Texas Timeline*
+cali_take2 <- US_2020 %>% 
+  select(sub_region_1, 
+         iso_3166_2_code, 
+         date, 
+         retail_and_recreation_percent_change_from_baseline, 
+         transit_stations_percent_change_from_baseline) %>% 
+  filter(iso_3166_2_code == "US-CA", date > "2020-09-01")
 
-* March 13 2020: state disaster declared
-* March 19 2020: state mandates
-* March 24 2020: stay at home orders
-* May 1 2020: phase 1 reopening 
-* May 18 2020: phase 2 reopening 
-* June 3 2020: phase 3 reopening 
-* June 26 2020: reopening paused 
-* July 2 2020: mask mandate put in place
-* Septemeber 17 2020: reopening starts up again 
-* November 21-25 2020: new infections and cases increase
-* December 2020: first month with more than 6000 fatalities
-* March 2 2021: remove mask mandate
-* March 10 2021: state fully reopens
+cali_take2 %>% ggplot(aes(x = date, y = transit_stations_percent_change_from_baseline)) + geom_line() + theme_linedraw()+ labs(title = "Transit Data California", subtitle = "September 1 2020 - December 31 2020", x = "Date", y = "Transit Percent Change from Baseline")
+```
 
-*Massachusetts Timeline*
+The graph, between Thanksgiving and Christmas, makes a U-shape which is the time period we are looking at. *A quick note: the baseline value is the media transit mobility value from January 3 - February 6 2020.*
 
-* March 13 2020: limited gatherings throughout the state
-* March 15 2020: more restrictions put into place
-* March 23 2020: stay at home orders
-* May 6 2020: mask mandate put in place
-* May 18 2020: phase 1 reopening
-* June 8 2020: phase 2 reopening
-* July 2 2020: phase 3 reopening 
-* September 29 2020: phase 3 step 2 reopening 
-* November 2 2020: statewide curfew
-* December 8 2020: all cities/towns rollback to phase 3 step 1 of reopening
-* May 29: state full reopens, no more mask mandate
+During the time period between December 5 and December 19, cases in California were increasing. Prior to December 5, cases were increasing; however, after December 19, cases began to decrease. 
 
-*New York Timeline*
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+truth_plot_cali <- truth_data %>% filter(location == "06") %>% ggplot(aes(x = target_end_date, 
+             y = value, 
+             color = location_name)) + geom_vline(xintercept = as.Date(c("2020-12-05", "2020-12-19"))) +
+  geom_line() +
+  theme_linedraw() +
+  labs(title = "Incident Cases Truth Data", subtitle = "California, before and after December 23", x = "Date", y = "Incident Cases", color = "Location")
+truth_plot_cali + theme(legend.position = "none")
+```
+
+*Results*
+
+I decided to take a look at the Weighted Interval Score (WIS) for each model before and after the time period selected. 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+scored_forecasts$type <- "Neither"
+scored_forecasts$type[scored_forecasts$model == "IowaStateLW-STEM" | scored_forecasts$model == "UVA-Ensemble" | scored_forecasts$model == "JHU_CSSE-DECOM"] <- "Only Mobility"
+scored_forecasts$type[scored_forecasts$model == "COVIDhub-baseline"] <- "Baseline"
+
+scores_type_before <- scored_forecasts %>% filter(forecast_date <= "2020-12-05" & forecast_date > "2020-11-05" & location == "06") %>% 
+  dplyr::group_by(model, forecast_date, type, location) %>% 
+  dplyr::summarise(wis = mean(wis)) 
+scores_type_before %>% 
+  ggplot(aes(x = forecast_date, y = wis, color = type)) + geom_line(aes(linetype = model)) + labs(title = "WIS Score by Type of Model", subtitle = "Before December 5", x = "Date", y = "WIS Score", color = "Model Type", linetype = "Model Name") + theme(axis.text.x = element_text(angle = 90)) 
+
+scores_type_after <- scored_forecasts %>% filter(forecast_date > "2020-12-19" & forecast_date < "2021-01-18" & location == "06") %>% 
+  dplyr::group_by(model, forecast_date, type, location) %>% 
+  dplyr::summarise(wis = mean(wis)) 
+scores_type_after %>% 
+  ggplot(aes(x = forecast_date, y = wis, color = type)) + geom_line(aes(linetype = model)) + labs(title = "WIS Score by Type of Model", subtitle = "After December 19", x = "Date", y = "WIS Score", color = "Model Type", linetype = "Model Name") + theme(axis.text.x = element_text(angle = 90)) 
+```
+
+Looking at these graphs, we can see that mobility models had worse WIS after December 19 while models without mobility data had consistent WIS both before and after the selected time period. 
+
+
+I also decided to look at the average and relative WIS for each model and model type. 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+mondays_before <- scored_forecasts %>% filter(forecast_date <= "2020-12-05" & forecast_date > "2020-11-05" & location == "06")
+#mondays_before
+
+mondays_after <- scored_forecasts %>% filter(forecast_date > "2020-12-19" & forecast_date < "2021-01-18" & location == "06") 
+#mondays_after
+
+avg_WIS_before <- mondays_before %>% 
+  dplyr::group_by(model, location) %>% 
+  dplyr::summarise(wis_before = mean(wis)) 
+avg_WIS_before
+```
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+avg_WIS_after <- mondays_after %>% 
+  dplyr::group_by(model, location) %>% 
+  dplyr::summarise(wis_after = mean(wis)) 
+avg_WIS_after
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+avg_WIS_before_mob <- mondays_before %>% filter(model == models_mob) %>% 
+  dplyr::summarise(wis_before_mob = mean(wis)) 
+avg_WIS_before_mob
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+avg_WIS_after_mob <- mondays_after %>% filter(model == models_mob) %>% 
+  dplyr::summarise(wis_after_mob = mean(wis)) 
+avg_WIS_after_mob
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+avg_WIS_before_neither <- mondays_before %>% filter(model == models_neither) %>% 
+  dplyr::summarise(wis_before_neither = mean(wis)) 
+avg_WIS_before_neither
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+avg_WIS_after_neither <- mondays_after %>% filter(model == models_neither) %>% 
+  dplyr::summarise(wis_after_neither = mean(wis)) 
+avg_WIS_after_neither
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+avg_wis_before_baseline <- mondays_before %>% filter(model == "COVIDhub-baseline") %>% summarise(wis_before_baseline = mean(wis)) 
+#avg_wis_before_baseline
+
+avg_wis_after_baseline <- mondays_after %>% filter(model == "COVIDhub-baseline") %>% summarise(wis_after_baseline = mean(wis)) 
+#avg_wis_after_baseline
+
+rel_wis_baseline <- avg_wis_after_baseline/avg_wis_before_baseline
+colnames(rel_wis_baseline) <- c("relwis_baseline")
+rel_wis_baseline
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+relWIS_before <- avg_WIS_before_mob/avg_WIS_before_neither
+colnames(relWIS_before) <- c("relwis_mob_neither_before")
+relWIS_before
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+relWIS_after <- avg_WIS_after_mob/avg_WIS_after_neither
+colnames(relWIS_after) <- c("relwis_mob_neither_after")
+relWIS_after
+```
+
+Looking at the first two figures, we can see that IowaStateLW-STEM's model had a better WIS while JHU_CSSE-DECOM and UVA-Ensemble had worse worse WIS. The non-mobility models got better with the exception of LANL. 
+
+Looking at the next four figures, we can see that the average WIS for models with mobility data got worse while average WIS for models without mobility data only got slightly worse. Mobility models went from a WIS of 73k to a WIS of 93k while non-mobility models went from a WIS of 52k to 59k. 
+
+Finally, in the last three figures, we can see that since the relative WIS increased after December 19, mobility WIS also increased. We can also see that the baseline performed well and had a relative WIS of less that 1. 
+
+\newpage
+**New York**
+
+*How did COVID-19 play out in New York?*
 
 * March 7 2020: state of emergency declared
 * April 15 2020: mask mandate put in place
@@ -114,100 +273,142 @@ Three of the locations that were chosen either never had a mask mandate or remov
 * February 15 2021: NYC middle schools go back to in person 
 * March 22 2021: NYC high schools go back to in person
 
-*California Timeline*
+*Time Period Selection*
 
-* March 4 2020: state of emergency declared
-* March 12 2020: cancel large events
-* March 19 2020: stay at home orders
-* May 8 2020: beginning of phase 2 reopening 
-* May 26 2020: phase 3 reopening 
-* June 18 2020: mask mandate put in place
-* July 13 2020: 30 counties ordered to close indoor businesses
-* July 22 2020: CA surpasses NY for confirmed cases
-* October 10 2020: loosen restrictions on private outdoor gatherings
-* November 19 2020: statewide curfew
-* December 3 2020: new stay at home oder
-* January 25 2021: no counties have stay at home order
+I decided to focus on the dates one month before and one month after December 17 2020. 
 
-*Michigan Timeline*
+There was a huge decrease in the transit mobility percent change in California on December 17 2020 so it seemed like an interesting time period to see whether mobility models were able to use that to their advantage. 
 
-* February 28 2020: state will activate emergency operations center
-* March 10 2020: state of emergency declared
-* March 13 2020: close schools and place restrictions on gatherings
-* March 16 2020: close public places
-* March 23 2020: stay at home orders
-* April 9 2020: extend stay at home orders through all of April 
-* May 1 2020: extend state of emergency 
-* May 22 2020: extend stay at home orders until June 12 and state of emergency until June 19
-* October 5 2020: mask mandate put in place
-* October 9 2020: public places reopen
-* November 2020: rapid increase in cases
-* December 7 2020: statewide partial shutdown 
-* December 18 2020: some indoor spaces reopen 
-* March 5 2021: loosen restrictions 
-* May 4 2021: state relaxes restrictions on masks 
-* June 1 2021: crowd size restrictions for outdoor events lifted
-* July 1 2021: all mandates lifted
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ny <- US_2020 %>% 
+  select(sub_region_1, 
+         iso_3166_2_code, 
+         date, 
+         retail_and_recreation_percent_change_from_baseline, 
+         transit_stations_percent_change_from_baseline) %>% 
+  filter(iso_3166_2_code == "US-NY", date > "2020-10-01")
+
+ny %>% ggplot(aes(x = date, y = transit_stations_percent_change_from_baseline)) + geom_line() + theme_linedraw()+ labs(title = "Transit Data New York", subtitle = "September 1 2020 - December 31 2020", x = "Date", y = "Transit Percent Change from Baseline")
+```
+
+The graph, between Thanksgiving and Christmas, has a decrease to about -65% which is the date we are looking at. *A quick note: the baseline value is the media transit mobility value from January 3 - February 6 2020.*
+
+Cases in New York were increasing before and after December 17 2020:
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+truth_plot_NY<- truth_data %>% filter(location == "36") %>% ggplot(aes(x = target_end_date, 
+             y = value, 
+             color = location_name)) + geom_vline(xintercept = as.Date("2020-12-17")) +
+  geom_line() +
+  theme_linedraw() +
+  labs(title = "Incident Cases Truth Data", subtitle = "New York, before and after December 17", x = "Date", y = "Incident Cases", color = "Location")
+truth_plot_NY + theme(legend.position = "none")
+```
+
+*Results*
+
+I decided to take a look at the Weighted Interval Score (WIS) for each model before and after the time period selected. 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+scored_forecasts$type <- "Neither"
+scored_forecasts$type[scored_forecasts$model == "IowaStateLW-STEM" | scored_forecasts$model == "UVA-Ensemble" | scored_forecasts$model == "JHU_CSSE-DECOM"] <- "Only Mobility"
+scored_forecasts$type[scored_forecasts$model == "COVIDhub-baseline"] <- "Baseline"
+
+scores_type_before_NY <- scored_forecasts %>% filter(forecast_date <= "2020-12-17" & forecast_date > "2020-11-17" & location == "36") %>% 
+  dplyr::group_by(model, forecast_date, type, location) %>% 
+  dplyr::summarise(wis = mean(wis)) 
+scores_type_before_NY %>% 
+  ggplot(aes(x = forecast_date, y = wis, color = type)) + geom_line(aes(linetype = model)) + labs(title = "WIS Score by Type of Model", subtitle = "Before December 17", x = "Date", y = "WIS Score", color = "Model Type", linetype = "Model Name") + theme(axis.text.x = element_text(angle = 90)) 
+
+scores_type_after_NY <- scored_forecasts %>% filter(forecast_date > "2020-12-17" & forecast_date < "2021-01-17" & location == "36") %>% 
+  dplyr::group_by(model, forecast_date, type, location) %>% 
+  dplyr::summarise(wis = mean(wis)) 
+scores_type_after_NY %>% 
+  ggplot(aes(x = forecast_date, y = wis, color = type)) + geom_line(aes(linetype = model)) + labs(title = "WIS Score by Type of Model", subtitle = "After December 17", x = "Date", y = "WIS Score", color = "Model Type", linetype = "Model Name") + theme(axis.text.x = element_text(angle = 90)) 
+```
+
+Looking at these graphs, we can see that mobility models got a little bit better after December 17 with the WIS being below 3000. Models without mobility data only got a little better with LANL getting much worse. 
 
 
+I also decided to look at the average and relative WIS for each model and model type. 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+mondays_before_NY <- scored_forecasts %>% filter(forecast_date <= "2020-12-17" & forecast_date > "2020-11-17" & location == "36")
+#mondays_before_NY
 
-**Key Information about the Models that were chosen**
+mondays_after_NY <- scored_forecasts %>% filter(forecast_date > "2020-12-17" & forecast_date < "2021-01-17" & location == "36") 
+#mondays_after_NY
 
-Model | Case Data | Model Type | Social Distancing Assumptions? | Mobility Data? | Notes
-------------- | ------------- | ------------- | ------------- | ------------- | -------------
-CU-select | Johns Hopkins, USAFacts | SEIR model | yes | yes | NPI Scenarios
-JHUAPL-Bucky | JHU CSSE, CDC | Spatial compartment model | yes | yes | accounts for NPIs
-COVIDhub-baseline | JHU CSSE | Median prediction at all future horizons | no | no | 
-LANL-GrowthRate | JHU CSSE | Statistical dynamical growth model | no | no |
-IowaStateLW-STEM | NYT, Johns Hopkins, Covid Tracking Project, USA Facts | Nonparametric space-time disease transmission model | no | yes | 
-UVA-Ensemble | CDC | AR, ISTM, SEIR model | no | yes (Baidu) | 
-JHU_IDD-CovidSP | Johns Hopkins | State-level metapopulation model with commuting and stochastic SEIR disease dynamics with social-distancing indicators | yes | no |
+avg_WIS_before_NY <- mondays_before_NY %>% 
+  dplyr::group_by(model, location) %>% 
+  dplyr::summarise(wis_before = mean(wis)) 
+avg_WIS_before_NY
+```
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+avg_WIS_after_NY <- mondays_after_NY %>% 
+  dplyr::group_by(model, location) %>% 
+  dplyr::summarise(wis_after = mean(wis)) 
+avg_WIS_after_NY
+```
 
-**Results**
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+avg_WIS_before_mob_NY <- mondays_before_NY %>% filter(model == models_mob) %>% 
+  dplyr::summarise(wis_before_mob = mean(wis)) 
+avg_WIS_before_mob_NY
+```
 
-Relative WIS: Location & Date | CU-select | JHUAPL-Bucky | COVIDhub-baseline | LANL-GrowthRate | IowaStateLW-Stem | UVA-Ensemble | JHU_IDD-CovidSP 
--------------- | -------------- | -------------- | -------------- | -------------- | -------------- | -------------- | -------------- | -------------- 
-California, December 25 2020 | 1.206475 | 1.522587	 | 1.164057	| 1.488985 | 1.113371 | 	1.628289	|	1.069115	
-California, December 3 2020 | 5.370204 | 1.808852	| 6.449432 | 2.792104	|	4.390412	|	3.733466	|	4.152183	
-Florida, December 25 2020 | 0.6055555 | 0.2638828 | 0.4991921 | 0.9095747 | 0.4722359 | 1.3920509 | 0.6998647 
-Florida, November 26-December 25 2020 | 0.7842814	| 0.2292115	| 0.6720338 | 0.4723293 | 0.5732159 | 1.6918945 | 0.7714050	
-Massachusetts, December 25 2020 | 1.3995285	|	1.0997744	|	0.4726977	|	1.4435453	|	0.7757552	|	1.1065041	|	0.8408508	
-Massachusetts, November 2 2020 | 3.979697	|	2.661800 | 4.719158 | 2.044704 |	2.500814 | NA | 3.030182	
-Massachusetts, December 8 2020 | 2.582925	| 1.141068 | 1.590219 |	1.459193 | 1.453894 | 1.378589 | 1.588102		
-Michigan, December 25 2020 | 1.2861948 | 0.5557569 | 1.4603111 | 0.5654227 | 1.5507782 | 0.7877323 | 0.8708405	
-Michigan, November 8 2020 | 1.680514 | 1.540251 | 1.631705 | 1.134571 | 1.864215 | NA | 1.664119	
-New York, December 25 2020 | 0.6282631 | 1.3932701 | 0.5790893 | 0.7732911 | 0.5692396 | 1.0451479 | 1.1616783	
-New York, November 12 2020 | 5.958968 | 4.937624 | 5.834913 | 2.874151 | 3.025552 | NA | 3.605014	
-Texas, December 25 2020 |	1.9554059	|	1.7943020	|	0.4314701	|	0.9648386	|	0.8648496	|	1.4402983	|	0.3218461	
-Texas, November 26-December 25 2020 |	2.1685951	|	2.1040233	|	0.4558419	|	0.4036692	|	0.7097249| 2.3080121 | 0.2761288	
-Texas, November 21-November 25 2020 |	1.3140754	|	1.5145767	|	0.8605251 |	0.3951242	|	0.6952534	|	1.8039064	|	0.5469355	
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+avg_WIS_after_mob_NY <- mondays_after_NY %>% filter(model == models_mob) %>% 
+  dplyr::summarise(wis_after_mob = mean(wis)) 
+avg_WIS_after_mob_NY
+```
 
-*Summary of Models*
-*Model Accuracy*
-*Model Accuracy by Group*
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+avg_WIS_before_neither_NY <- mondays_before_NY %>% filter(model == models_neither) %>% 
+  dplyr::summarise(wis_before_neither = mean(wis)) 
+avg_WIS_before_neither_NY
+```
 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+avg_WIS_after_neither_NY <- mondays_after_NY %>% filter(model == models_neither) %>% 
+  dplyr::summarise(wis_after_neither = mean(wis)) 
+avg_WIS_after_neither_NY
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+avg_wis_before_baseline_NY <- mondays_before_NY %>% filter(model == "COVIDhub-baseline") %>% summarise(wis_before_baseline = mean(wis)) 
+#avg_wis_before_baseline_NY
+
+avg_wis_after_baseline_NY <- mondays_after_NY %>% filter(model == "COVIDhub-baseline") %>% summarise(wis_after_baseline = mean(wis)) 
+#avg_wis_after_baseline_NY
+
+rel_wis_baseline_NY <- avg_wis_after_baseline_NY/avg_wis_before_baseline_NY
+colnames(rel_wis_baseline_NY) <- c("relwis_baseline")
+rel_wis_baseline_NY
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+relWIS_before_NY <- avg_WIS_before_mob_NY/avg_WIS_before_neither_NY
+colnames(relWIS_before_NY) <- c("relwis_mob_neither_before")
+relWIS_before_NY
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+relWIS_after_NY <- avg_WIS_after_mob_NY/avg_WIS_after_neither_NY
+colnames(relWIS_after_NY) <- c("relwis_mob_neither_after")
+relWIS_after_NY
+```
+
+Looking at the first two figures, we can see that IowaStateLW-STEM's model had a better WIS while JHU_CSSE-DECOM and UVA-Ensemble had worse worse WIS after December 17. All of T=the non-mobility models got worse after.
+
+Looking at the next four figures, we can see that the average WIS for models with mobility data got slightly worse going from 11k to 19k while models without mobility data got much worse going from 8k to 20k.
+
+Finally, in the last three figures, we can see that since the relative WIS decreased after December 17 which means that mobility model WIS decreased as well and performed better than non-mobility models. We can also see that the baseline, again, performed well. 
+
+\newpage
 **Discussion**
 
+If models with mobility data performed better, we would have expected the relative WIS after the specified dates to be less than 1. In California, the relative WIS after December 19 was greater than 1 and greater than the relative WIS before December 5. In New York, the relative WIS after December 17 was less than 1. 
 
+Models with mobility data did not perform better than models without mobility data in California, but they did perform better in New York. 
 
-
-#mob: 
-#UMich-RidgeTfReg 
-
-**Model Chart 2**
-\newpage
-
-Model | Case Data | Model Type | Social Distancing Assumptions? | Mobility Data? | Notes
-------------- | ------------- | ------------- | ------------- | ------------- | -------------
-COVIDhub-baseline | JHU CSSE | Median prediction at all future horizons | no | no | 
-LANL-GrowthRate | JHU CSSE | Statistical dynamical growth model | no | no |
-COVIDhub-ensemble | | Unweighted average or median of submitted forecasts | no | no
-RobertWalraven-ESG | JHU CSSE | SEIR model | no | no
-IowaStateLW-STEM | NYT, Johns Hopkins, Covid Tracking Project, USA Facts | Nonparametric space-time disease transmission model | no | yes | 
-UVA-Ensemble | CDC | AR, ISTM, SEIR model | no | yes (Baidu) | 
-JHU_CSSE-DECOM | JHU CSSE | Empirical machine learning model | no | yes (SafeGraph) | 
-UMich-RidgeTfReg | JHU CSSE | Ridge regression | no | yes
-
-
-
-
+From here, we can either conclude that models with mobility data are not more or less likely to perform better than models without mobility data or we can say that we need to look into more locations and dates to see more variations before making a definitive conclusion. 

@@ -35,15 +35,15 @@ models_mob <- c("IowaStateLW-STEM", "JHU_CSSE-DECOM", "UVA-Ensemble")
 
 forecasts_data_all <- load_forecasts(models = c("COVIDhub-baseline", "LANL-GrowthRate","IowaStateLW-STEM", "UVA-Ensemble", "JHU_CSSE-DECOM", "COVIDhub-ensemble", "RobertWalraven-ESG"), 
                                  forecast_dates = timezeros,
-                                 locations = c("06"), 
+                                 locations = c("06", "36"), 
                                  targets = paste(1:4, "wk ahead inc case"), 
                                  hub = "US")
 
-scored_forecasts <- score_forecasts(forecasts = forecasts_data, 
+scored_forecasts <- score_forecasts(forecasts = forecasts_data_all, 
                                     truth=truth_data, 
                                     return_format = "wide")
 
-forecasts_data_unique <-  forecasts_data %>%
+forecasts_data_unique <-  forecasts_data_all %>%
   mutate(sat_fcast_week = as.Date(calc_target_week_end_date(forecast_date, horizon = 0))) %>%
   group_by(model, location, sat_fcast_week, horizon, quantile) %>%
   mutate(forecast_in_wk = row_number(), 
@@ -227,3 +227,170 @@ scores_type_after %>%
   ggplot(aes(x = forecast_date, y = wis, color = type)) + geom_line(aes(linetype = model)) + labs(title = "WIS Score by Type of Model", subtitle = "After December 19", x = "Date", y = "WIS Score", color = "Model Type", linetype = "Model Name") + theme(axis.text.x = element_text(angle = 90)) 
 ```
 
+## Second State & Date
+## NEW YORK DECEMBER 17
+
+```{r}
+mondays_before_NY <- scored_forecasts %>% filter(forecast_date <= "2020-12-17" & forecast_date > "2020-11-17" & location == "36")
+mondays_before_NY
+
+mondays_after_NY <- scored_forecasts %>% filter(forecast_date > "2020-12-17" & forecast_date < "2021-01-17" & location == "36") 
+mondays_after_NY
+```
+
+```{r}
+inc_case_targets_NY <- paste(1, "wk ahead inc case")
+models_list <- c("COVIDhub-baseline", "LANL-GrowthRate","IowaStateLW-STEM", "UVA-Ensemble", "JHU_CSSE-DECOM", "COVIDhub-ensemble", "RobertWalraven-ESG")
+
+before_NY <- mondays_before_NY %>% distinct(forecast_date)
+before_NY
+
+timezeros_NY <- seq(from = as.Date("2020-11-17") , to = as.Date("2020-12-17"), by="days") 
+
+forecasts_data_NY <- load_forecasts(models = models_list, 
+                                 forecast_dates = timezeros_NY,
+                                 locations = c("36"), 
+                                 targets = paste(1, "wk ahead inc case"), 
+                                 hub = "US")
+
+p_NY <- plot_forecasts(forecast_data = forecasts_data_NY, 
+                    truth_source = "JHU",
+                    target_variable = "inc case",  
+                    intervals = c(.5, .8, .95),
+                    fill_by_model = TRUE,
+                    plot = FALSE) 
+p_NY +
+  scale_x_date(name=NULL, date_breaks = "1 months", date_labels = "%b") +
+  theme(axis.ticks.length.x = unit(0.5, "cm"),
+    axis.text.x = element_text(vjust = 7, hjust = -0.2))
+#help("load_forecasts")
+```
+#after:
+```{r}
+timezeros_after_NY <- seq(from = as.Date("2020-12-17") , to = as.Date("2021-01-17"), by="days") 
+
+forecasts_data_after_NY <- load_forecasts(models = models_list, 
+                                 forecast_dates = timezeros_after_NY,
+                                 locations = c("36"), 
+                                 targets = paste(1, "wk ahead inc case"), 
+                                 hub = "US")
+
+p_after_NY <- plot_forecasts(forecast_data = forecasts_data_after_NY, 
+                    truth_source = "JHU",
+                    target_variable = "inc case",  
+                    intervals = c(.5, .8, .95),
+                    fill_by_model = TRUE,
+                    plot = FALSE) 
+p_after_NY +
+  scale_x_date(name=NULL, date_breaks = "2 months", date_labels = "%b") +
+  theme(axis.ticks.length.x = unit(0.5, "cm"),
+    axis.text.x = element_text(vjust = 7, hjust = -0.2))
+```
+
+
+## Avg WIS Before
+```{r}
+avg_WIS_before_NY <- mondays_before_NY %>% 
+  dplyr::group_by(model, location) %>% 
+  dplyr::summarise(wis_before = mean(wis)) 
+avg_WIS_before_NY
+```
+
+
+
+## Avg WIS After
+```{r}
+avg_WIS_after_NY <- mondays_after_NY %>% 
+  dplyr::group_by(model, location) %>% 
+  dplyr::summarise(wis_after = mean(wis)) 
+avg_WIS_after_NY
+```
+
+## Avg WIS before (Mob)
+```{r}
+avg_WIS_before_mob_NY <- mondays_before_NY %>% filter(model == models_mob) %>% 
+  dplyr::summarise(wis_before_mob = mean(wis)) 
+avg_WIS_before_mob_NY
+```
+
+## Avg WIS after (Mob)
+```{r}
+avg_WIS_after_mob_NY <- mondays_after_NY %>% filter(model == models_mob) %>% 
+  dplyr::summarise(wis_after_mob = mean(wis)) 
+avg_WIS_after_mob_NY
+```
+
+
+## Avg WIS before (Without Mob)
+```{r}
+avg_WIS_before_neither_NY <- mondays_before_NY %>% filter(model == models_neither) %>% 
+  dplyr::summarise(wis_before_neither = mean(wis)) 
+avg_WIS_before_neither_NY
+```
+
+
+## Avg WIS after (Without Mob)
+```{r}
+avg_WIS_after_neither_NY <- mondays_after_NY %>% filter(model == models_neither) %>% 
+  dplyr::summarise(wis_after_neither = mean(wis)) 
+avg_WIS_after_neither_NY
+```
+
+## Avg WIS baseline
+```{r}
+avg_wis_before_baseline_NY <- mondays_before_NY %>% filter(model == "COVIDhub-baseline") %>% summarise(wis_before_baseline = mean(wis)) 
+avg_wis_before_baseline_NY
+
+avg_wis_after_baseline_NY <- mondays_after_NY %>% filter(model == "COVIDhub-baseline") %>% summarise(wis_after_baseline = mean(wis)) 
+avg_wis_after_baseline_NY
+
+rel_wis_baseline_NY <- avg_wis_after_baseline_NY/avg_wis_before_baseline_NY
+colnames(rel_wis_baseline_NY) <- c("relwis_baseline")
+rel_wis_baseline_NY
+```
+
+## relWIS_before
+```{r}
+relWIS_before_NY <- avg_WIS_before_mob_NY/avg_WIS_before_neither_NY
+colnames(relWIS_before_NY) <- c("relwis_mob_neither_before")
+relWIS_before_NY
+```
+
+## relWIS_after
+```{r}
+relWIS_after_NY <- avg_WIS_after_mob_NY/avg_WIS_after_neither_NY
+colnames(relWIS_after_NY) <- c("relwis_mob_neither_after")
+relWIS_after_NY
+```
+
+## New York - what's going on 
+```{r}
+
+truth_plot_NY<- truth_data %>% filter(location == "36") %>% ggplot(aes(x = target_end_date, 
+             y = value, 
+             color = location_name)) + geom_vline(xintercept = as.Date("2020-12-17")) +
+  geom_line() +
+  theme_linedraw() +
+  labs(title = "Incident Cases Truth Data", subtitle = "New York, before and after December 17", x = "Date", y = "Incident Cases", color = "Location")
+truth_plot_NY + theme(legend.position = "none")
+```
+
+## WIS by model and type
+```{r}
+scored_forecasts$type <- "Neither"
+scored_forecasts$type[scored_forecasts$model == "IowaStateLW-STEM" | scored_forecasts$model == "UVA-Ensemble" | scored_forecasts$model == "JHU_CSSE-DECOM"] <- "Only Mobility"
+scored_forecasts$type[scored_forecasts$model == "COVIDhub-baseline"] <- "Baseline"
+
+scores_type_before_NY <- scored_forecasts %>% filter(forecast_date <= "2020-12-17" & forecast_date > "2020-11-17" & location == "36") %>% 
+  dplyr::group_by(model, forecast_date, type, location) %>% 
+  dplyr::summarise(wis = mean(wis)) 
+scores_type_before_NY %>% 
+  ggplot(aes(x = forecast_date, y = wis, color = type)) + geom_line(aes(linetype = model)) + labs(title = "WIS Score by Type of Model", subtitle = "Before December 17", x = "Date", y = "WIS Score", color = "Model Type", linetype = "Model Name") + theme(axis.text.x = element_text(angle = 90)) 
+
+scores_type_after_NY <- scored_forecasts %>% filter(forecast_date > "2020-12-17" & forecast_date < "2021-01-17" & location == "36") %>% 
+  dplyr::group_by(model, forecast_date, type, location) %>% 
+  dplyr::summarise(wis = mean(wis)) 
+scores_type_after_NY %>% 
+  ggplot(aes(x = forecast_date, y = wis, color = type)) + geom_line(aes(linetype = model)) + labs(title = "WIS Score by Type of Model", subtitle = "After December 17", x = "Date", y = "WIS Score", color = "Model Type", linetype = "Model Name") + theme(axis.text.x = element_text(angle = 90)) 
+```
+NY got better
